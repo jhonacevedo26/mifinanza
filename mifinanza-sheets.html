@@ -389,17 +389,32 @@ function initGoogle(){
     callback: async (resp) => {
       if(resp.error){ showAuth(); return; }
       accessToken = resp.access_token;
+      const expiry = Date.now() + (resp.expires_in || 3600) * 1000;
+      localStorage.setItem('mf_token', accessToken);
+      localStorage.setItem('mf_token_expiry', expiry);
       const info = await getUserInfo();
-      document.getElementById('user-email').textContent = info.email || '';
+      const email = info.email || '';
+      localStorage.setItem('mf_email', email);
+      document.getElementById('user-email').textContent = email;
       setSyncStatus('loading','Cargando datos...');
       await loadAllData();
       hideLoading();
       renderAll();
     }
   });
-  // Try silent token
-  tokenClient.requestAccessToken({prompt:''});
-  setTimeout(()=>{ if(!accessToken) showAuth(); }, 3000);
+  // Intentar recuperar token guardado
+  const savedToken  = localStorage.getItem('mf_token');
+  const savedExpiry = parseInt(localStorage.getItem('mf_token_expiry') || '0');
+  const savedEmail  = localStorage.getItem('mf_email') || '';
+  if(savedToken && Date.now() < savedExpiry - 60000){
+    accessToken = savedToken;
+    document.getElementById('user-email').textContent = savedEmail;
+    setSyncStatus('loading','Cargando datos...');
+    loadAllData().then(()=>{ hideLoading(); renderAll(); });
+  } else {
+    tokenClient.requestAccessToken({prompt:''});
+    setTimeout(()=>{ if(!accessToken) showAuth(); }, 3000);
+  }
 }
 
 async function getUserInfo(){
@@ -410,7 +425,7 @@ async function getUserInfo(){
 }
 
 function signIn(){ document.getElementById('auth-screen').style.display='none'; setLoading('Autenticando...'); tokenClient.requestAccessToken({prompt:'consent'}); }
-function signOut(){ accessToken=null; google.accounts.oauth2.revoke(accessToken,()=>{}); showAuth(); }
+function signOut(){ localStorage.removeItem('mf_token'); localStorage.removeItem('mf_token_expiry'); localStorage.removeItem('mf_email'); google.accounts.oauth2.revoke(accessToken,()=>{}); accessToken=null; showAuth(); }
 function showAuth(){ document.getElementById('loading-screen').style.display='none'; document.getElementById('auth-screen').style.display='flex'; }
 function setLoading(msg){ document.getElementById('loading-screen').style.display='flex'; document.getElementById('loading-msg').textContent=msg; document.getElementById('app').style.display='none'; }
 function hideLoading(){ document.getElementById('loading-screen').style.display='none'; document.getElementById('app').style.display='flex'; }
