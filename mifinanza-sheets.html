@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MiFinanza</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#d4f04a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MiFinanza">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
@@ -960,6 +966,15 @@ async function doDeletePresup(id){
   closeModal(); setSyncStatus('loading','Guardando...');
   try{ await savePresupuestos(); setSyncStatus('ok','Sincronizado'); }catch(e){ setSyncStatus('err','Error al guardar'); }
   renderAll();
+}
+
+// ============================================================
+// PWA SERVICE WORKER
+// ============================================================
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
 }
 
 // ============================================================
