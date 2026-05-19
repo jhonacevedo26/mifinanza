@@ -256,16 +256,20 @@ h1,h2,h3{font-family:'Fraunces',serif;font-weight:400;}
         <div class="month-label" id="month-lbl">—</div>
         <button class="month-btn" onclick="changeMonth(1)">›</button>
       </div>
-      <div class="fab-row fab-row-inline">
-        <button class="fab fab-ing" onclick="openModal('ingreso')">＋ Ingreso</button>
-        <button class="fab fab-gas" onclick="openModal('gasto')">－ Gasto</button>
-        <button class="fab fab-tra" onclick="openModal('transferencia')">⇄ Transferir</button>
-      </div>
       <div class="grid4" style="margin-bottom:14px">
         <div class="card-sm"><div class="stat-label">Saldo anterior</div><div class="stat-val blue mono" id="s-ant">$0</div></div>
         <div class="card-sm"><div class="stat-label">Ingresos</div><div class="stat-val green mono" id="s-ing">$0<div id="s-var" style="font-size:11px;margin-top:4px"></div></div></div>
         <div class="card-sm"><div class="stat-label">Gastos</div><div class="stat-val red mono" id="s-gas">$0</div></div>
         <div class="card-sm"><div class="stat-label">Balance</div><div class="stat-val mono" id="s-bal">$0</div></div>
+      </div>
+
+      <!-- INCOME VARIANCE INDICATOR -->
+      <div id="ing-var-card" style="margin-bottom:14px;padding:12px 16px;background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <div>
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);margin-bottom:3px">Ingresos vs mes anterior</div>
+          <div id="ing-var-label" style="font-size:13px;color:var(--muted)">—</div>
+        </div>
+        <div id="ing-var-badge" style="font-family:'DM Mono',monospace;font-size:20px;font-weight:500;flex-shrink:0">—</div>
       </div>
 
       <div class="acord" id="acord-chart">
@@ -288,9 +292,23 @@ h1,h2,h3{font-family:'Fraunces',serif;font-weight:400;}
         </div>
       </div>
 
-      <div class="card">
-        <div class="sec-title">Últimos movimientos <button onclick="showPage('transacciones')">Ver todos</button></div>
-        <div id="dash-recent"></div>
+      <div class="acord" id="acord-recent">
+        <div class="acord-header" onclick="toggleAcord('acord-recent')">
+          <span class="acord-title">Últimos movimientos</span>
+          <span class="acord-arrow open" id="arrow-acord-recent">▾</span>
+        </div>
+        <div class="acord-body open" id="body-acord-recent">
+          <div class="acord-inner">
+            <div id="dash-recent"></div>
+            <div style="text-align:center;margin-top:10px"><button class="btn btn-ghost btn-sm" onclick="showPage('transacciones')">Ver todos los movimientos</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fab-row fab-row-inline" style="margin-top:18px;justify-content:center">
+        <button class="fab fab-ing" onclick="openModal('ingreso')">＋ Ingreso</button>
+        <button class="fab fab-gas" onclick="openModal('gasto')">－ Gasto</button>
+        <button class="fab fab-tra" onclick="openModal('transferencia')">⇄ Transferir</button>
       </div>
     </div>
 
@@ -524,17 +542,19 @@ async function loadAllData(){
       sheetsGet('transacciones!A:J'),
       sheetsGet('cuentas!A:D'),
       sheetsGet('presupuestos!A:D'),
-      sheetsGet('activos!A:E'),
-      sheetsGet('pasivos!A:E'),
+      sheetsGet('activos!A:F'),
+      sheetsGet('pasivos!A:F'),
       sheetsGet('categorias!A:C').catch(()=>[]),
       sheetsGet('categorias!E:G').catch(()=>[])
     ]);
 
-    db.transacciones = txRows.map(r=>({id:r[0],tipo:r[1],monto:parseFloat(r[2])||0,descripcion:r[3]||'',fecha:r[4]||'',categoria:r[5]||'',cuenta:r[6]||'',cuentaOrigen:r[7]||'',cuentaDestino:r[8]||''})).filter(t=>t.id);
+    // Helper: parse numbers stored with dots as thousands separator (Colombian format)
+    function parseMonto(v){ if(!v && v!==0) return 0; const s=String(v).trim(); const clean=s.replace(/\./g,'').replace(',','.'); const n=parseFloat(clean); return isNaN(n)?0:n; }
+    db.transacciones = txRows.map(r=>({id:r[0],tipo:r[1],monto:parseMonto(r[2]),descripcion:r[3]||'',fecha:r[4]||'',categoria:r[5]||'',cuenta:r[6]||'',cuentaOrigen:r[7]||'',cuentaDestino:r[8]||''})).filter(t=>t.id);
     db.cuentas = cuentaRows.map(r=>({id:r[0],nombre:r[1]||'',tipo:r[2]||'',emoji:r[3]||'🏦'})).filter(c=>c.id);
-    db.presupuestos = presRows.map(r=>({id:r[0],categoria:r[1]||'',monto:parseFloat(r[2])||0,mes:r[3]||''})).filter(p=>p.id);
-    db.activos = actRows.map(r=>({id:r[0],nombre:r[1]||'',tipo:r[2]||'',valor:parseFloat(r[3])||0,emoji:r[4]||'💰',actualizado:r[4]||new Date().toISOString()})).filter(a=>a.id);
-    db.pasivos = pasRows.map(r=>({id:r[0],nombre:r[1]||'',tipo:r[2]||'',valor:parseFloat(r[3])||0,emoji:r[4]||'💳',actualizado:r[4]||new Date().toISOString()})).filter(p=>p.id);
+    db.presupuestos = presRows.map(r=>({id:r[0],categoria:r[1]||'',monto:parseMonto(r[2]),mes:r[3]||''})).filter(p=>p.id);
+    db.activos = actRows.map(r=>({id:r[0],nombre:r[1]||'',tipo:r[2]||'',valor:parseMonto(r[3]),emoji:r[4]||'💰',actualizado:r[5]||new Date().toISOString()})).filter(a=>a.id);
+    db.pasivos = pasRows.map(r=>({id:r[0],nombre:r[1]||'',tipo:r[2]||'',valor:parseMonto(r[3]),emoji:r[4]||'💳',actualizado:r[5]||new Date().toISOString()})).filter(p=>p.id);
 
     // Categories
     const cg = catGRows.filter(r=>r&&r[0]).map(r=>({n:r[0],e:r[1]||'📦',color:r[2]||'#888'}));
@@ -650,48 +670,47 @@ function renderDashboard(){
   document.getElementById('s-gas').textContent=fmtM(gas);
   const be=document.getElementById('s-bal'); be.textContent=fmtMS(bal); be.className='stat-val mono '+(bal>=0?'accent':'red');
 
-  // Ingresos + variacion vs mes anterior
-  const ingEl=document.getElementById('s-ing');
-  ingEl.childNodes[0] && (ingEl.childNodes[0].textContent=fmtM(ing));
+  // Ingresos — mostrar monto
+  document.getElementById('s-ing').innerHTML = fmtM(ing) + '<div id="s-var" style="font-size:11px;margin-top:4px"></div>';
+
+  // Variación ingresos vs mes anterior — tarjeta indicador
   const prevMonth=currentMonth===0?11:currentMonth-1;
   const prevYear=currentMonth===0?currentYear-1:currentYear;
   const txsPrev=getTxMonth(prevYear,prevMonth);
   const ingPrev=txsPrev.filter(t=>t.tipo==='ingreso').reduce((s,t)=>s+t.monto,0);
-  const varEl=document.getElementById('s-var');
+  const varCard=document.getElementById('ing-var-card');
+  const varBadge=document.getElementById('ing-var-badge');
+  const varLabel=document.getElementById('ing-var-label');
   if(ingPrev>0){
-    const pct=Math.round((ing-ingPrev)/ingPrev*100);
-    const up=pct>=0;
-    varEl.innerHTML=`<span style="color:${up?'var(--accent2)':'var(--red)'}">${up?'▲':'▼'} ${Math.abs(pct)}% vs mes ant.</span>`;
+    const diff=ing-ingPrev;
+    const pct=Math.round(diff/ingPrev*100);
+    const up=diff>=0;
+    const arrow=up?'▲':'▼';
+    const col=up?'var(--accent2)':'var(--red)';
+    varBadge.style.color=col;
+    varBadge.textContent=`${arrow} ${Math.abs(pct)}%`;
+    varLabel.innerHTML=`<span style="color:${col}">${up?'+':''} ${fmtMS(diff)}</span> <span style="color:var(--muted)">vs ${MONTH_NAMES[prevMonth]}</span>`;
+    varCard.style.borderColor=up?'rgba(74,240,160,.3)':'rgba(240,90,90,.3)';
   } else {
-    varEl.innerHTML='';
-  }
-  // Fix ing display since we have nested div
-  document.getElementById('s-ing').querySelector('.stat-val') || null;
-  const ingText = document.getElementById('s-ing');
-  // Re-render properly
-  ingText.innerHTML = fmtM(ing) + `<div id="s-var" style="font-size:11px;margin-top:4px">${varEl ? varEl.innerHTML : ''}</div>`;
-  // Recompute var after innerHTML reset
-  const varEl2=document.getElementById('s-var');
-  if(ingPrev>0){
-    const pct=Math.round((ing-ingPrev)/ingPrev*100);
-    const up=pct>=0;
-    varEl2.innerHTML=`<span style="color:${up?'var(--accent2)':'var(--red)'}">${up?'▲':'▼'} ${Math.abs(pct)}% vs mes ant.</span>`;
+    varBadge.textContent='—';
+    varLabel.textContent='Sin datos del mes anterior';
+    varCard.style.borderColor='var(--line)';
   }
 
-  // PIE CHART
+  // PIE CHART — colores vibrantes, leyenda con % + monto
+  const PIE_COLORS = ['#d4f04a','#4af0a0','#5ab0f0','#f0c05a','#b08af5','#f05a9a','#5af0e8','#f07a5a','#a0d46e','#7ab8f5'];
   const bycat={};
   txs.filter(t=>t.tipo==='gasto').forEach(t=>{ bycat[t.categoria]=(bycat[t.categoria]||0)+t.monto; });
   const cc=document.getElementById('dash-chart');
-  const entries=Object.entries(bycat).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const entries=Object.entries(bycat).sort((a,b)=>b[1]-a[1]).slice(0,10);
   if(!entries.length){ cc.innerHTML='<div class="empty"><div class="empty-icon">◎</div>Sin gastos este mes</div>'; }
   else{
     const total=entries.reduce((s,e)=>s+e[1],0);
     const size=200;
-    const cx=size/2, cy=size/2, r=size*0.38, ri=size*0.22;
-    let svgSlices='', svgLabels='', legendHtml='', angle=-Math.PI/2;
+    const cx=size/2, cy=size/2, r=size*0.40, ri=size*0.22;
+    let svgSlices='', legendHtml='', angle=-Math.PI/2;
     entries.forEach(([cat,val],i)=>{
-      const ci=catInfo(cat,'gasto');
-      const col=ci.color||getColor(i);
+      const col=PIE_COLORS[i%PIE_COLORS.length];
       const pct=val/total;
       const a1=angle, a2=angle+pct*2*Math.PI;
       const x1=cx+r*Math.cos(a1), y1=cy+r*Math.sin(a1);
@@ -699,15 +718,26 @@ function renderDashboard(){
       const ix1=cx+ri*Math.cos(a1), iy1=cy+ri*Math.sin(a1);
       const ix2=cx+ri*Math.cos(a2), iy2=cy+ri*Math.sin(a2);
       const large=pct>0.5?1:0;
-      svgSlices+=`<path d="M${ix1},${iy1} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} L${ix2},${iy2} A${ri},${ri} 0 ${large},0 ${ix1},${iy1} Z" fill="${col}" opacity=".9"/>`;
-      const lx=cx+(r+12)*Math.cos((a1+a2)/2), ly=cy+(r+12)*Math.sin((a1+a2)/2);
-      if(pct>0.06) svgLabels+=`<text x="${lx}" y="${ly}" text-anchor="middle" font-size="9" fill="var(--muted)">${Math.round(pct*100)}%</text>`;
-      legendHtml+=`<div style="display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:5px"><div style="width:10px;height:10px;border-radius:2px;background:${col};flex-shrink:0"></div><span style="flex:1;color:var(--text)">${cat}</span><span class="mono" style="color:var(--muted);font-size:11px">${fmtM(val)}</span></div>`;
+      const mid=(a1+a2)/2;
+      const lx=cx+(r+14)*Math.cos(mid), ly=cy+(r+14)*Math.sin(mid);
+      svgSlices+=`<path d="M${ix1.toFixed(1)},${iy1.toFixed(1)} L${x1.toFixed(1)},${y1.toFixed(1)} A${r},${r} 0 ${large},1 ${x2.toFixed(1)},${y2.toFixed(1)} L${ix2.toFixed(1)},${iy2.toFixed(1)} A${ri},${ri} 0 ${large},0 ${ix1.toFixed(1)},${iy1.toFixed(1)} Z" fill="${col}" stroke="#0c0c0e" stroke-width="1.5"/>`;
+      if(pct>0.07) svgSlices+=`<text x="${lx.toFixed(1)}" y="${(ly+3).toFixed(1)}" text-anchor="middle" font-size="9" font-family="DM Mono,monospace" fill="#0c0c0e" font-weight="600">${Math.round(pct*100)}%</text>`;
+      legendHtml+=`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)">
+        <div style="width:11px;height:11px;border-radius:3px;background:${col};flex-shrink:0"></div>
+        <span style="flex:1;font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cat||'Sin categoría'}</span>
+        <div style="text-align:right;flex-shrink:0">
+          <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text)">${fmtM(val)}</span>
+          <span style="font-size:10px;color:var(--muted);margin-left:4px">${Math.round(pct*100)}%</span>
+        </div>
+      </div>`;
       angle=a2;
     });
-    cc.innerHTML=`<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
-      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="flex-shrink:0">${svgSlices}${svgLabels}</svg>
-      <div style="flex:1;min-width:140px">${legendHtml}</div>
+    // center label
+    svgSlices+=`<text x="${cx}" y="${cy-4}" text-anchor="middle" font-size="9" fill="var(--muted)" font-family="DM Sans,sans-serif">Total</text>`;
+    svgSlices+=`<text x="${cx}" y="${cy+9}" text-anchor="middle" font-size="9" fill="var(--text)" font-family="DM Mono,monospace" font-weight="600">${fmtM(total)}</text>`;
+    cc.innerHTML=`<div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="flex-shrink:0">${svgSlices}</svg>
+      <div style="flex:1;min-width:150px;max-height:200px;overflow-y:auto">${legendHtml}</div>
     </div>`;
   }
 
