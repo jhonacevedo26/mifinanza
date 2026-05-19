@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mifinanza-v1';
+const CACHE_NAME = 'mifinanza-v2';
 const ASSETS = [
   '/mifinanza/mifinanza-sheets.html',
   '/mifinanza/manifest.json'
