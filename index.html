@@ -822,12 +822,31 @@ function clearFilters(){ filterTipo=null; filterCuenta=null; filterCat=null; ren
 function renderPresupuesto(){
   const mk=monthKey(currentYear,currentMonth);
   const txs=getTxMonth(currentYear,currentMonth);
-  const pres=db.presupuestos.filter(p=>p.mes===mk);
+
+  // Busca presupuesto del mes actual; si no existe, hereda del mes anterior
+  let pres=db.presupuestos.filter(p=>p.mes===mk);
+  if(!pres.length){
+    const pm=currentMonth===0?11:currentMonth-1;
+    const py=currentMonth===0?currentYear-1:currentYear;
+    const mkPrev=monthKey(py,pm);
+    const presPrev=db.presupuestos.filter(p=>p.mes===mkPrev);
+    if(presPrev.length){
+      // Clonar con nuevo mes y nuevos IDs y guardar
+      pres=presPrev.map(p=>({id:uid(),categoria:p.categoria,monto:p.monto,mes:mk}));
+      db.presupuestos.push(...pres);
+      savePresupuestos().catch(()=>{});
+    }
+  }
+
   const div=document.getElementById('budget-list');
   if(!pres.length){ div.innerHTML='<div class="empty"><div class="empty-icon">◎</div>Sin presupuesto para este mes. Agrega una meta arriba.</div>'; return; }
+
+  let totalMeta=0, totalGastado=0;
   let html='';
   pres.forEach(p=>{
     const gastado=txs.filter(t=>t.tipo==='gasto'&&t.categoria===p.categoria).reduce((s,t)=>s+t.monto,0);
+    totalMeta+=p.monto;
+    totalGastado+=gastado;
     const pct=Math.min(Math.round(gastado/p.monto*100),100);
     const col=pct>=100?'var(--red)':pct>=80?'var(--amber)':'var(--accent)';
     const ci=catInfo(p.categoria,'gasto');
@@ -841,6 +860,20 @@ function renderPresupuesto(){
       <div class="prog-pct">${pct}% utilizado · ${restante>=0?'Disponible: '+fmtM(restante):'⚠ Superado por '+fmtM(-restante)}</div>
     </div>`;
   });
+
+  // Fila de totales
+  const totalPct=Math.min(Math.round(totalGastado/totalMeta*100),100);
+  const totalCol=totalPct>=100?'var(--red)':totalPct>=80?'var(--amber)':'var(--accent)';
+  const totalRestante=totalMeta-totalGastado;
+  html+=`<div class="prog-wrap" style="margin-top:10px;border-top:1px solid var(--line);padding-top:12px">
+    <div class="prog-header">
+      <span style="font-weight:600;color:var(--text)">📊 Total presupuesto</span>
+      <span class="mono" style="color:${totalCol};font-size:13px;font-weight:600">${fmtM(totalGastado)} / ${fmtM(totalMeta)}</span>
+    </div>
+    <div class="prog-bar"><div class="prog-fill" style="width:${totalPct}%;background:${totalCol}"></div></div>
+    <div class="prog-pct">${totalPct}% utilizado · ${totalRestante>=0?'Disponible: '+fmtM(totalRestante):'⚠ Superado por '+fmtM(-totalRestante)}</div>
+  </div>`;
+
   div.innerHTML=html;
 }
 
