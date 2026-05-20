@@ -877,7 +877,7 @@ function openModal(tipo){ document.getElementById('modal-content').innerHTML=get
 
 function catOpts(tipo){ const arr=tipo==='ingreso'?db.catsIngreso:db.catsGasto; return arr.map(c=>`<option value="${c.n}">${c.e} ${c.n}</option>`).join(''); }
 function accOpts(selId){ return db.cuentas.map(c=>`<option value="${c.id}" ${c.id===selId?'selected':''}>${c.emoji} ${c.nombre}</option>`).join(''); }
-const today=()=>new Date().toISOString().split('T')[0];
+const today=()=>{ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
 
 function getModalHtml(tipo){
   if(tipo==='ingreso'||tipo==='gasto'){
