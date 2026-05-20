@@ -550,7 +550,22 @@ async function loadAllData(){
 
     // Helper: parse numbers stored with dots as thousands separator (Colombian format)
     function parseMonto(v){ if(!v && v!==0) return 0; const s=String(v).trim(); const clean=s.replace(/\./g,'').replace(',','.'); const n=parseFloat(clean); return isNaN(n)?0:n; }
-    db.transacciones = txRows.map(r=>({id:r[0],tipo:r[1],monto:parseMonto(r[2]),descripcion:r[3]||'',fecha:r[4]||'',categoria:r[5]||'',cuenta:r[6]||'',cuentaOrigen:r[7]||'',cuentaDestino:r[8]||''})).filter(t=>t.id);
+    // Convierte fecha de Sheets (string "YYYY-MM-DD" o serial numérico) a string local "YYYY-MM-DD"
+    function parseFecha(v){ 
+      if(!v) return '';
+      const s=String(v).trim();
+      // Ya viene como YYYY-MM-DD
+      if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.split('T')[0];
+      // Serial numérico de Google Sheets (días desde 30-dic-1899)
+      const n=parseFloat(s);
+      if(!isNaN(n)){
+        const ms=(n-25569)*86400000; // 25569 = días entre 30-dic-1899 y 01-ene-1970
+        const d=new Date(ms);
+        return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0');
+      }
+      return s;
+    }
+    db.transacciones = txRows.map(r=>({id:r[0],tipo:r[1],monto:parseMonto(r[2]),descripcion:r[3]||'',fecha:parseFecha(r[4]),categoria:r[5]||'',cuenta:r[6]||'',cuentaOrigen:r[7]||'',cuentaDestino:r[8]||''})).filter(t=>t.id);
     db.cuentas = cuentaRows.map(r=>({id:r[0],nombre:r[1]||'',tipo:r[2]||'',emoji:r[3]||'🏦'})).filter(c=>c.id);
     db.presupuestos = presRows.map(r=>({id:r[0],categoria:r[1]||'',monto:parseMonto(r[2]),mes:r[3]||''})).filter(p=>p.id);
     db.activos = actRows.map(r=>({id:r[0],nombre:r[1]||'',tipo:r[2]||'',valor:parseMonto(r[3]),emoji:r[4]||'💰',actualizado:r[5]||new Date().toISOString()})).filter(a=>a.id);
