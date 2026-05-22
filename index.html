@@ -478,8 +478,14 @@ function initGoogle(){
     setSyncStatus('loading','Cargando datos...');
     loadAllData().then(()=>{ hideLoading(); renderAll(); });
   } else {
-    tokenClient.requestAccessToken({prompt:''});
-    setTimeout(()=>{ if(!accessToken) showAuth(); }, 3000);
+    // Token vencido o no existe — intentar renovar silenciosamente primero
+    // Si hay email guardado significa que ya autorizó antes en este dispositivo
+    if(savedEmail){
+      tokenClient.requestAccessToken({prompt:'', login_hint: savedEmail});
+      setTimeout(()=>{ if(!accessToken) showAuth(); }, 4000);
+    } else {
+      showAuth();
+    }
   }
 }
 
