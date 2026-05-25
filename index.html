@@ -284,9 +284,12 @@ h1,h2,h3{font-family:'Fraunces',serif;font-weight:400;}
       </div>
 
       <div class="acord" id="acord-cuentas">
-        <div class="acord-header" onclick="toggleAcord('acord-cuentas')">
+        <div class="acord-header" onclick="toggleAcord('acord-cuentas')" style="display:flex;align-items:center;justify-content:space-between">
           <span class="acord-title">Cuentas</span>
-          <span class="acord-arrow open" id="arrow-acord-cuentas">▾</span>
+          <div style="display:flex;align-items:center;gap:12px">
+            <span id="cuentas-total-badge" style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600"></span>
+            <span class="acord-arrow open" id="arrow-acord-cuentas">▾</span>
+          </div>
         </div>
         <div class="acord-body open" id="body-acord-cuentas">
           <div class="acord-inner"><div id="dash-cuentas" class="grid3"></div></div>
@@ -772,7 +775,17 @@ function renderDashboard(){
 
   // Accounts
   const ad=document.getElementById('dash-cuentas');
-  ad.innerHTML=db.cuentas.length?db.cuentas.map(c=>{ const b=getAccBalance(c.id); const neg=b<0; return `<div class="card-sm kpi-card" style="cursor:pointer;flex-direction:column;align-items:flex-start;border-color:${neg?'rgba(240,90,90,.4)':'var(--line)'};${neg?'background:rgba(240,90,90,.04)':''}" onclick="filterByCuenta('${c.id}')"><div class="stat-label">${c.emoji} ${c.nombre}</div><div class="stat-val mono ${b>=0?'green':'red'}" style="font-size:16px;margin-bottom:6px">${fmtMS(b)}</div><div style="font-size:10px;color:var(--accent)">Ver movimientos →</div></div>`; }).join(''):'<div class="empty" style="grid-column:1/-1">Sin cuentas registradas</div>';
+  if(db.cuentas.length){
+    ad.innerHTML=db.cuentas.map(c=>{ const b=getAccBalance(c.id); const neg=b<0; return `<div class="card-sm kpi-card" style="cursor:pointer;flex-direction:column;align-items:flex-start;border-color:${neg?'rgba(240,90,90,.4)':'var(--line)'};${neg?'background:rgba(240,90,90,.04)':''}" onclick="filterByCuenta('${c.id}')"><div class="stat-label">${c.emoji} ${c.nombre}</div><div class="stat-val mono ${b>=0?'green':'red'}" style="font-size:16px;margin-bottom:6px">${fmtMS(b)}</div><div style="font-size:10px;color:var(--accent)">Ver movimientos →</div></div>`; }).join('');
+    // Total neto de todas las cuentas en el header del acordeón
+    const totalNeto=db.cuentas.reduce((s,c)=>s+getAccBalance(c.id),0);
+    const badge=document.getElementById('cuentas-total-badge');
+    if(badge){ badge.textContent=fmtMS(totalNeto); badge.style.color=totalNeto>=0?'var(--accent2)':'var(--red)'; }
+  } else {
+    ad.innerHTML='<div class="empty" style="grid-column:1/-1">Sin cuentas registradas</div>';
+    const badge=document.getElementById('cuentas-total-badge');
+    if(badge){ badge.textContent=''; }
+  }
 }
 
 function filterByCuenta(id){ filterCuenta=id; filterCat=null; filterTipo=null; showPage('transacciones'); }
