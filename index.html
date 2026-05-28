@@ -1118,7 +1118,7 @@ function renderMetas(){
     const limite = meta.fechaLimite ? new Date(meta.fechaLimite+'T00:00:00').toLocaleDateString('es-CO',{month:'long',year:'numeric'}) : '—';
     const acc = db.cuentas.find(c=>c.id===meta.cuentaOrigen)||{nombre:'',emoji:'💳'};
     const accMeta = db.cuentas.find(c=>c.id===meta.cuentaMeta)||{nombre:'',emoji:'💰'};
-    return \`<div class="meta-card" onclick="openEditMeta('\${meta.id}')">
+    return `<div class="meta-card" onclick="openEditMeta('\${meta.id}')">
       <div class="meta-card-header">
         <div>
           <div class="meta-card-title">\${meta.emoji} \${meta.nombre}</div>
@@ -1135,7 +1135,7 @@ function renderMetas(){
         <span>Restante: \${fmtM(restante)}</span>
         \${!done?'<span style="color:var(--accent)">Cuota \${MONTH_NAMES[nowM]}: <strong>'+fmtM(cuota)+'</strong></span>':'<span style="color:var(--accent2)">✓ Meta lograda</span>'}
       </div>
-    </div>\`;
+    </div>`;
   }).join('');
 
   renderGoalsTable();
@@ -1154,12 +1154,12 @@ function renderGoalsTable(){
   for(let m=startM; m<12; m++) months.push(m);
 
   let html = '<table class="goals-table"><thead><tr><th>Meta</th>';
-  months.forEach(m=>{ html+=\`<th\${m===currentMonth?' class="cell-cur"':''}>\${MONTH_NAMES[m].substring(0,3)}</th>\`; });
+  months.forEach(m=>{ html+=`<th\${m===currentMonth?' class="cell-cur"':''}>\${MONTH_NAMES[m].substring(0,3)}</th>`; });
   html+='<th>Total</th></tr></thead><tbody>';
 
   db.metas.forEach(meta=>{
     const limite = new Date(meta.fechaLimite+'T00:00:00');
-    html+=\`<tr><td>\${meta.emoji} \${meta.nombre}</td>\`;
+    html+=`<tr><td>\${meta.emoji} \${meta.nombre}</td>`;
     let rowTotal=0;
     months.forEach(m=>{
       const isCur = m===currentMonth;
@@ -1179,9 +1179,9 @@ function renderGoalsTable(){
         rowTotal+=cellVal;
       }
       const display = cellVal>0 ? fmtM(cellVal) : (pastLimit?'—':'—');
-      html+=\`<td class="\${cellClass}\${isCur&&!cellClass.includes('cur')?' cell-cur':''}">\${display}</td>\`;
+      html+=`<td class="\${cellClass}\${isCur&&!cellClass.includes('cur')?' cell-cur':''}">\${display}</td>`;
     });
-    html+=\`<td style="color:var(--text);font-weight:600">\${fmtM(meta.montoTotal)}</td></tr>\`;
+    html+=`<td style="color:var(--text);font-weight:600">\${fmtM(meta.montoTotal)}</td></tr>`;
   });
 
   // Totals row
@@ -1195,10 +1195,10 @@ function renderGoalsTable(){
       if(real>0) return s+real;
       return s+getMetaCuotaMes(meta,year,m);
     },0);
-    html+=\`<td class="\${isCur?'cell-cur':''}" style="font-weight:600;color:var(--text)">\${total>0?fmtM(total):'—'}</td>\`;
+    html+=`<td class="\${isCur?'cell-cur':''}" style="font-weight:600;color:var(--text)">\${total>0?fmtM(total):'—'}</td>`;
   });
   const grandTotal=db.metas.reduce((s,m)=>s+m.montoTotal,0);
-  html+=\`<td style="font-weight:600;color:var(--accent)">\${fmtM(grandTotal)}</td></tr>\`;
+  html+=`<td style="font-weight:600;color:var(--accent)">\${fmtM(grandTotal)}</td></tr>`;
   html+='</tbody></table>';
   wrap.innerHTML=html;
 }
@@ -1219,14 +1219,14 @@ function renderPresupuestoMetas(){
     const pct=Math.min(Math.round(real/cuota*100),100);
     const col=pct>=100?'var(--accent2)':pct>=60?'var(--amber)':'var(--blue)';
     const acc=db.cuentas.find(c=>c.id===meta.cuentaMeta)||{nombre:'',emoji:'💰'};
-    return \`<div class="prog-wrap" onclick="openAporteMeta('\${meta.id}',\${cuota})" style="cursor:pointer">
+    return `<div class="prog-wrap" onclick="openAporteMeta('\${meta.id}',\${cuota})" style="cursor:pointer">
       <div class="prog-header">
         <span>\${meta.emoji} \${meta.nombre} <span style="font-size:10px;color:var(--muted)">\${acc.emoji} \${acc.nombre}</span></span>
         <span class="mono" style="color:\${col};font-size:13px">\${fmtM(real)} / \${fmtM(cuota)}</span>
       </div>
       <div class="prog-bar"><div class="prog-fill" style="width:\${pct}%;background:\${col}"></div></div>
       <div class="prog-pct">\${pct}% · \${real>=cuota?'✓ Cuota completa':'Falta: '+fmtM(cuota-real)}</div>
-    </div>\`;
+    </div>`;
   }).join('');
 }
 
