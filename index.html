@@ -1121,7 +1121,7 @@ function renderMetas(){
       : '<span style="color:var(--accent)">Cuota '+MONTH_NAMES[nowM]+': <strong>'+fmtM(cuota)+'</strong></span>';
     return '<div class="meta-card" onclick="openEditMeta(&#39;' + meta.id + '&#39;)">' +
       +'<div class="meta-card-header"><div>'
-      +'<div class="meta-card-title">'+meta.emoji+' '+meta.nombre+'</div>'
+      +'<div class="meta-card-title">'+metaEmoji+' '+meta.nombre+'</div>'
       +'<div class="meta-card-sub">Limite: '+limite+' - '+acc.emoji+' '+acc.nombre+' a '+accM.emoji+' '+accM.nombre+'</div>'
       +'</div>'+badge+'</div>'
       +'<div class="prog-header">'
@@ -1154,7 +1154,8 @@ function renderGoalsTable(){
 
   db.metas.forEach(function(meta){
     var limite = new Date(meta.fechaLimite+'T00:00:00');
-    html += '<tr><td>'+meta.emoji+' '+meta.nombre+'</td>';
+    var mEmoji = meta.emoji && meta.emoji !== 'undefined' ? meta.emoji : '🎯';
+    html += '<tr><td>'+mEmoji+' '+meta.nombre+'</td>';
     months.forEach(function(m){
       var isCur = m===currentMonth;
       var isPast = m < new Date().getMonth();
