@@ -204,6 +204,30 @@ h1,h2,h3{font-family:'Fraunces',serif;font-weight:400;}
 .google-btn{display:flex;align-items:center;gap:10px;background:#fff;color:#333;border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:500;cursor:pointer;transition:opacity .15s;font-family:'DM Sans',sans-serif;}
 .google-btn:hover{opacity:.9;}
 .google-btn img{width:20px;}
+
+/* METAS */
+.meta-card{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r2);padding:16px;margin-bottom:10px;}
+.meta-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;}
+.meta-card-title{font-family:'Fraunces',serif;font-size:15px;color:var(--text);}
+.meta-card-sub{font-size:11px;color:var(--muted);margin-top:3px;}
+.meta-badge{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500;white-space:nowrap;}
+.meta-badge.ok{background:rgba(74,240,160,.15);color:var(--accent2);}
+.meta-badge.warn{background:rgba(240,192,90,.15);color:var(--amber);}
+.meta-badge.over{background:rgba(74,240,160,.2);color:var(--accent2);border:1px solid var(--accent2);}
+.meta-badge.done{background:rgba(212,240,74,.2);color:var(--accent);}
+
+/* TABLA ANUAL */
+.goals-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:16px;}
+.goals-table{width:100%;border-collapse:collapse;font-size:12px;min-width:500px;}
+.goals-table th{padding:8px 10px;text-align:right;color:var(--muted);font-weight:400;border-bottom:1px solid var(--line);white-space:nowrap;}
+.goals-table th:first-child{text-align:left;}
+.goals-table td{padding:8px 10px;text-align:right;border-bottom:1px solid rgba(255,255,255,.04);font-family:'DM Mono',monospace;font-size:11px;white-space:nowrap;}
+.goals-table td:first-child{text-align:left;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--text);}
+.goals-table tr:hover td{background:var(--bg3);}
+.goals-table .cell-cur{background:rgba(212,240,74,.06);color:var(--accent);}
+.goals-table .cell-paid{color:var(--accent2);}
+.goals-table .cell-0{color:var(--line);}
+.goals-table .cell-pending{color:var(--muted);}
 </style>
 </head>
 <body>
@@ -239,6 +263,7 @@ h1,h2,h3{font-family:'Fraunces',serif;font-weight:400;}
       <div class="nav-item" onclick="showPage('patrimonio')"><span class="nav-icon">◈</span> Patrimonio</div>
       <div class="nav-item" onclick="showPage('cuentas')"><span class="nav-icon">▣</span> Cuentas</div>
       <div class="nav-item" onclick="showPage('categorias')"><span class="nav-icon">⊞</span> Categorías</div>
+      <div class="nav-item" onclick="showPage('metas')"><span class="nav-icon">🎯</span> Metas</div>
     </nav>
     <div class="sidebar-bottom">
       <div class="sync-status"><div class="sync-dot" id="sync-dot"></div><span id="sync-msg">Sin conexión</span></div>
@@ -338,15 +363,39 @@ h1,h2,h3{font-family:'Fraunces',serif;font-weight:400;}
     <!-- PRESUPUESTO -->
     <div id="page-presupuesto" class="page">
       <h1 class="page-title">Presupuesto</h1>
-      <p class="page-sub">Controla tus metas de gasto</p>
+      <p class="page-sub">Gastos planeados y compromisos del mes</p>
       <div class="month-sel">
         <button class="month-btn" onclick="changeMonth(-1)">‹</button>
         <div class="month-label" id="month-lbl3">—</div>
         <button class="month-btn" onclick="changeMonth(1)">›</button>
       </div>
-      <div class="card" style="margin-bottom:14px">
-        <div class="sec-title">Metas del mes <button onclick="openModal('presupuesto')">+ Agregar</button></div>
-        <div id="budget-list"></div>
+
+      <div class="acord" id="acord-presup-gastos">
+        <div class="acord-header" onclick="toggleAcord('acord-presup-gastos')">
+          <span class="acord-title">📊 Gastos del mes</span>
+          <span class="acord-arrow open" id="arrow-acord-presup-gastos">▾</span>
+        </div>
+        <div class="acord-body open" id="body-acord-presup-gastos">
+          <div class="acord-inner">
+            <div style="margin-bottom:12px;text-align:right">
+              <button class="btn btn-ghost btn-sm" onclick="openModal('presupuesto')">+ Agregar categoría</button>
+            </div>
+            <div id="budget-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="acord" id="acord-presup-metas">
+        <div class="acord-header" onclick="toggleAcord('acord-presup-metas')">
+          <span class="acord-title">🎯 Compromisos del mes</span>
+          <span class="acord-arrow open" id="arrow-acord-presup-metas">▾</span>
+        </div>
+        <div class="acord-body open" id="body-acord-presup-metas">
+          <div class="acord-inner">
+            <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Cuotas calculadas automáticamente según tus metas activas. Toca para registrar el aporte.</p>
+            <div id="budget-metas-list"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -392,6 +441,42 @@ h1,h2,h3{font-family:'Fraunces',serif;font-weight:400;}
       </div>
     </div>
 
+
+    <!-- METAS Y COMPROMISOS -->
+    <div id="page-metas" class="page">
+      <h1 class="page-title">Metas y compromisos</h1>
+      <p class="page-sub">Provisiona dinero para gastos futuros mes a mes</p>
+
+      <!-- TABLA ANUAL -->
+      <div class="acord" id="acord-tabla-metas">
+        <div class="acord-header" onclick="toggleAcord('acord-tabla-metas')">
+          <span class="acord-title">📅 Vista anual</span>
+          <span class="acord-arrow open" id="arrow-acord-tabla-metas">▾</span>
+        </div>
+        <div class="acord-body open" id="body-acord-tabla-metas">
+          <div class="acord-inner">
+            <div class="goals-table-wrap"><div id="goals-annual-table"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LISTA METAS -->
+      <div class="acord" id="acord-metas-list">
+        <div class="acord-header" onclick="toggleAcord('acord-metas-list')">
+          <span class="acord-title">🎯 Mis metas</span>
+          <span class="acord-arrow open" id="arrow-acord-metas-list">▾</span>
+        </div>
+        <div class="acord-body open" id="body-acord-metas-list">
+          <div class="acord-inner">
+            <div style="margin-bottom:12px;text-align:right">
+              <button class="btn btn-primary btn-sm" onclick="openModal('meta')">+ Nueva meta</button>
+            </div>
+            <div id="metas-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -415,6 +500,7 @@ h1,h2,h3{font-family:'Fraunces',serif;font-weight:400;}
   <div class="mob-nav-item" onclick="showPage('patrimonio')" id="mn-patrimonio"><span>◈</span><span>Patrimonio</span></div>
   <div class="mob-nav-item" onclick="showPage('cuentas')" id="mn-cuentas"><span>▣</span><span>Cuentas</span></div>
   <div class="mob-nav-item" onclick="showPage('categorias')" id="mn-categorias"><span>⊞</span><span>Categorías</span></div>
+  <div class="mob-nav-item" onclick="showPage('metas')" id="mn-metas"><span>🎯</span><span>Metas</span></div>
   <div class="mob-nav-item" onclick="signOut()"><span>⏏</span><span>Salir</span></div>
 </nav>
 
@@ -435,7 +521,7 @@ const SCOPES         = 'https://www.googleapis.com/auth/spreadsheets';
 // STATE
 // ============================================================
 let tokenClient, accessToken = null;
-let db = { cuentas:[], transacciones:[], presupuestos:[], activos:[], pasivos:[], catsGasto:[], catsIngreso:[] };
+let db = { cuentas:[], transacciones:[], presupuestos:[], activos:[], pasivos:[], catsGasto:[], catsIngreso:[], metas:[] };
 let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth();
 let filterCuenta = null;
@@ -575,7 +661,7 @@ async function loadAllData(){
       }
       return s;
     }
-    db.transacciones = txRows.map(r=>({id:r[0],tipo:r[1],monto:parseMonto(r[2]),descripcion:r[3]||'',fecha:parseFecha(r[4]),categoria:r[5]||'',cuenta:r[6]||'',cuentaOrigen:r[7]||'',cuentaDestino:r[8]||''})).filter(t=>t.id);
+    db.transacciones = txRows.map(r=>({id:r[0],tipo:r[1],monto:parseMonto(r[2]),descripcion:r[3]||'',fecha:parseFecha(r[4]),categoria:r[5]||'',cuenta:r[6]||'',cuentaOrigen:r[7]||'',cuentaDestino:r[8]||'',metaId:r[9]||''})).filter(t=>t.id);
     db.cuentas = cuentaRows.map(r=>({id:r[0],nombre:r[1]||'',tipo:r[2]||'',emoji:r[3]||'🏦'})).filter(c=>c.id);
     db.presupuestos = presRows.map(r=>({id:r[0],categoria:r[1]||'',monto:parseMonto(r[2]),mes:r[3]||''})).filter(p=>p.id);
     db.activos = actRows.map(r=>({id:r[0],nombre:r[1]||'',tipo:r[2]||'',valor:parseMonto(r[3]),emoji:r[4]||'💰',actualizado:r[5]||new Date().toISOString()})).filter(a=>a.id);
@@ -587,6 +673,13 @@ async function loadAllData(){
     db.catsGasto   = cg.length  ? cg  : [...DEFAULT_CATS_GASTO];
     db.catsIngreso = ci.length  ? ci  : [...DEFAULT_CATS_INGRESO];
 
+    // METAS
+    const metaRows = await sheetsGet('metas!A:J').catch(()=>[]);
+    db.metas = metaRows.map(r=>({
+      id:r[0]||'', nombre:r[1]||'', montoTotal:parseMonto(r[2]), fechaLimite:parseFecha(r[3]),
+      cuentaOrigen:r[4]||'', cuentaMeta:r[5]||'', emoji:r[6]||'🎯', color:r[7]||'#d4f04a', completada:r[8]==='true'
+    })).filter(m=>m.id);
+
     setSyncStatus('ok','Sincronizado');
   } catch(e) {
     setSyncStatus('err','Error de sincronización');
@@ -595,7 +688,7 @@ async function loadAllData(){
 }
 
 async function saveTxToSheets(tx){
-  await sheetsAppend('transacciones',[[tx.id,tx.tipo,tx.monto,tx.descripcion,tx.fecha,tx.categoria||'',tx.cuenta||'',tx.cuentaOrigen||'',tx.cuentaDestino||'']]);
+  await sheetsAppend('transacciones',[[tx.id,tx.tipo,tx.monto,tx.descripcion,tx.fecha,tx.categoria||'',tx.cuenta||'',tx.cuentaOrigen||'',tx.cuentaDestino||'',tx.metaId||'']]);
 }
 
 async function rewriteSheet(sheet, data, mapper){
@@ -606,7 +699,9 @@ async function saveCuentas(){ await rewriteSheet('cuentas', db.cuentas, c=>[c.id
 async function savePresupuestos(){ await rewriteSheet('presupuestos', db.presupuestos, p=>[p.id,p.categoria,p.monto,p.mes]); }
 async function saveActivos(){ await rewriteSheet('activos', db.activos, a=>[a.id,a.nombre,a.tipo,a.valor,a.emoji]); }
 async function savePasivos(){ await rewriteSheet('pasivos', db.pasivos, p=>[p.id,p.nombre,p.tipo,p.valor,p.emoji]); }
-async function saveTransacciones(){ await rewriteSheet('transacciones', db.transacciones, t=>[t.id,t.tipo,t.monto,t.descripcion,t.fecha,t.categoria||'',t.cuenta||'',t.cuentaOrigen||'',t.cuentaDestino||'']); }
+async function saveTransacciones(){ await rewriteSheet('transacciones', db.transacciones, t=>[t.id,t.tipo,t.monto,t.descripcion,t.fecha,t.categoria||'',t.cuenta||'',t.cuentaOrigen||'',t.cuentaDestino||'',t.metaId||'']); }
+async function saveMetas(){ await rewriteSheet('metas', db.metas, m=>[m.id,m.nombre,m.montoTotal,m.fechaLimite,m.cuentaOrigen||'',m.cuentaMeta||'',m.emoji||'🎯',m.color||'#d4f04a',m.completada?'true':'false']); }
+
 async function saveCats(){
   const rows = Math.max(db.catsGasto.length, db.catsIngreso.length);
   const values = [];
@@ -664,7 +759,7 @@ function getAccBalance(id){ return db.transacciones.reduce((s,t)=>{ if(t.tipo===
 function showPage(p){
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach((x,i)=>{ const pages=['dashboard','transacciones','presupuesto','patrimonio','cuentas','categorias']; x.classList.toggle('active',pages[i]===p); });
+  document.querySelectorAll('.nav-item').forEach((x,i)=>{ const pages=['dashboard','transacciones','presupuesto','patrimonio','cuentas','categorias','metas']; x.classList.toggle('active',pages[i]===p); });
   document.querySelectorAll('.mob-nav-item').forEach(x=>x.classList.remove('active'));
   const mn=document.getElementById('mn-'+p); if(mn) mn.classList.add('active');
   renderAll();
@@ -677,9 +772,9 @@ function changeMonth(d){ currentMonth+=d; if(currentMonth<0){currentMonth=11;cur
 // ============================================================
 function renderAll(){
   const lbl=MONTH_NAMES[currentMonth]+' '+currentYear;
-  ['month-lbl','month-lbl2','month-lbl3'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=lbl; });
+  ['month-lbl','month-lbl2','month-lbl3','month-lbl4'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=lbl; });
   document.getElementById('dash-sub').textContent='Resumen — '+lbl;
-  renderDashboard(); renderTransacciones(); renderPresupuesto(); renderPatrimonio(); renderCuentas(); renderCategorias();
+  renderDashboard(); renderTransacciones(); renderPresupuesto(); renderPatrimonio(); renderCuentas(); renderCategorias(); renderMetas();
 }
 
 // ============================================================
@@ -966,6 +1061,176 @@ function renderPresupuesto(){
   div.innerHTML=html;
 }
 
+
+// ============================================================
+// METAS Y COMPROMISOS
+// ============================================================
+function getMetaAportes(metaId){
+  // Retorna todas las transferencias etiquetadas como aporte a esta meta
+  return db.transacciones.filter(t=>t.tipo==='transferencia' && t.metaId===metaId);
+}
+
+function getMetaAportado(metaId){
+  return getMetaAportes(metaId).reduce((s,t)=>s+t.monto,0);
+}
+
+function getMetaCuotaMes(meta, year, month){
+  // Cuota recalculada para el mes dado según aportes anteriores
+  const now = new Date(year, month, 1);
+  const limite = new Date(meta.fechaLimite+'T00:00:00');
+  // Meses restantes incluyendo el mes actual
+  const mesesRestantes = Math.max(1,
+    (limite.getFullYear()-now.getFullYear())*12 + (limite.getMonth()-now.getMonth()) + 1
+  );
+  // Aportes hechos ANTES de este mes
+  const aportadoAntes = getMetaAportes(meta.id)
+    .filter(t=>{ const p=t.fecha.split('-'); const d=new Date(+p[0],+p[1]-1,+p[2]); return d < now; })
+    .reduce((s,t)=>s+t.monto, 0);
+  const restante = Math.max(0, meta.montoTotal - aportadoAntes);
+  return Math.round(restante / mesesRestantes);
+}
+
+function renderMetas(){
+  const list = document.getElementById('metas-list');
+  if(!list) return;
+
+  if(!db.metas.length){
+    list.innerHTML='<div class="empty"><div class="empty-icon">🎯</div>Sin metas aún. Crea tu primera meta arriba.</div>';
+    renderGoalsTable();
+    return;
+  }
+
+  const nowY=currentYear, nowM=currentMonth;
+  list.innerHTML = db.metas.map(meta=>{
+    const aportado = getMetaAportado(meta.id);
+    const pct = Math.min(Math.round(aportado/meta.montoTotal*100),100);
+    const cuota = getMetaCuotaMes(meta, nowY, nowM);
+    const restante = meta.montoTotal - aportado;
+    const done = aportado >= meta.montoTotal;
+    const col = done?'var(--accent)':pct>=75?'var(--accent2)':pct>=40?'var(--amber)':'var(--blue)';
+    const badge = done
+      ? '<span class="meta-badge done">✓ Completada</span>'
+      : pct>=80
+        ? '<span class="meta-badge over">Casi lista</span>'
+        : pct>=40
+          ? '<span class="meta-badge warn">En progreso</span>'
+          : '<span class="meta-badge">Iniciando</span>';
+    const limite = meta.fechaLimite ? new Date(meta.fechaLimite+'T00:00:00').toLocaleDateString('es-CO',{month:'long',year:'numeric'}) : '—';
+    const acc = db.cuentas.find(c=>c.id===meta.cuentaOrigen)||{nombre:'',emoji:'💳'};
+    const accMeta = db.cuentas.find(c=>c.id===meta.cuentaMeta)||{nombre:'',emoji:'💰'};
+    return \`<div class="meta-card" onclick="openEditMeta('\${meta.id}')">
+      <div class="meta-card-header">
+        <div>
+          <div class="meta-card-title">\${meta.emoji} \${meta.nombre}</div>
+          <div class="meta-card-sub">Límite: \${limite} · \${acc.emoji} \${acc.nombre} → \${accMeta.emoji} \${accMeta.nombre}</div>
+        </div>
+        \${badge}
+      </div>
+      <div class="prog-header">
+        <span style="font-size:12px">\${fmtM(aportado)} de \${fmtM(meta.montoTotal)}</span>
+        <span class="mono" style="color:\${col};font-size:13px">\${pct}%</span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:\${pct}%;background:\${col}"></div></div>
+      <div class="prog-pct" style="display:flex;justify-content:space-between;margin-top:6px">
+        <span>Restante: \${fmtM(restante)}</span>
+        \${!done?'<span style="color:var(--accent)">Cuota \${MONTH_NAMES[nowM]}: <strong>'+fmtM(cuota)+'</strong></span>':'<span style="color:var(--accent2)">✓ Meta lograda</span>'}
+      </div>
+    </div>\`;
+  }).join('');
+
+  renderGoalsTable();
+  renderPresupuestoMetas();
+}
+
+function renderGoalsTable(){
+  const wrap = document.getElementById('goals-annual-table');
+  if(!wrap) return;
+  if(!db.metas.length){ wrap.innerHTML='<div class="empty">Sin metas registradas</div>'; return; }
+
+  const year = currentYear;
+  // Show months from current month to end of year (or up to meta limit)
+  const startM = new Date().getMonth();
+  const months = [];
+  for(let m=startM; m<12; m++) months.push(m);
+
+  let html = '<table class="goals-table"><thead><tr><th>Meta</th>';
+  months.forEach(m=>{ html+=\`<th\${m===currentMonth?' class="cell-cur"':''}>\${MONTH_NAMES[m].substring(0,3)}</th>\`; });
+  html+='<th>Total</th></tr></thead><tbody>';
+
+  db.metas.forEach(meta=>{
+    const limite = new Date(meta.fechaLimite+'T00:00:00');
+    html+=\`<tr><td>\${meta.emoji} \${meta.nombre}</td>\`;
+    let rowTotal=0;
+    months.forEach(m=>{
+      const isCur = m===currentMonth;
+      const isPast = m < new Date().getMonth();
+      // Aportes reales ese mes
+      const realAporte = getMetaAportes(meta.id)
+        .filter(t=>{ const p=t.fecha.split('-'); return +p[0]===year && +p[1]-1===m; })
+        .reduce((s,t)=>s+t.monto,0);
+      // Mes ya pasó la fecha límite
+      const pastLimit = new Date(year,m,1) > limite;
+      let cellVal=0, cellClass='';
+      if(pastLimit){ cellClass='cell-0'; }
+      else if(realAporte>0){ cellVal=realAporte; cellClass='cell-paid'; rowTotal+=cellVal; }
+      else {
+        const cuota = getMetaCuotaMes(meta,year,m);
+        cellVal=cuota; cellClass=isPast?'cell-pending':(isCur?'cell-cur':'cell-pending');
+        rowTotal+=cellVal;
+      }
+      const display = cellVal>0 ? fmtM(cellVal) : (pastLimit?'—':'—');
+      html+=\`<td class="\${cellClass}\${isCur&&!cellClass.includes('cur')?' cell-cur':''}">\${display}</td>\`;
+    });
+    html+=\`<td style="color:var(--text);font-weight:600">\${fmtM(meta.montoTotal)}</td></tr>\`;
+  });
+
+  // Totals row
+  html+='<tr style="border-top:1px solid var(--line)"><td style="font-weight:600;color:var(--text)">Total mes</td>';
+  months.forEach(m=>{
+    const isCur=m===currentMonth;
+    const total=db.metas.reduce((s,meta)=>{
+      const limite=new Date(meta.fechaLimite+'T00:00:00');
+      if(new Date(year,m,1)>limite) return s;
+      const real=getMetaAportes(meta.id).filter(t=>{const p=t.fecha.split('-');return +p[0]===year&&+p[1]-1===m;}).reduce((s,t)=>s+t.monto,0);
+      if(real>0) return s+real;
+      return s+getMetaCuotaMes(meta,year,m);
+    },0);
+    html+=\`<td class="\${isCur?'cell-cur':''}" style="font-weight:600;color:var(--text)">\${total>0?fmtM(total):'—'}</td>\`;
+  });
+  const grandTotal=db.metas.reduce((s,m)=>s+m.montoTotal,0);
+  html+=\`<td style="font-weight:600;color:var(--accent)">\${fmtM(grandTotal)}</td></tr>\`;
+  html+='</tbody></table>';
+  wrap.innerHTML=html;
+}
+
+// Agrega cuotas de metas al presupuesto visual
+function renderPresupuestoMetas(){
+  const mk=monthKey(currentYear,currentMonth);
+  // Inject into presupuesto page if it exists
+  const metasPresDiv=document.getElementById('budget-metas-list');
+  if(!metasPresDiv) return;
+  const activasMes=db.metas.filter(m=>!m.completada).map(meta=>{
+    const cuota=getMetaCuotaMes(meta,currentYear,currentMonth);
+    const real=getMetaAportes(meta.id).filter(t=>{const p=t.fecha.split('-');const d=new Date(+p[0],+p[1]-1,+p[2]);return d.getFullYear()===currentYear&&d.getMonth()===currentMonth;}).reduce((s,t)=>s+t.monto,0);
+    return {meta,cuota,real};
+  }).filter(x=>x.cuota>0);
+  if(!activasMes.length){ metasPresDiv.innerHTML='<div class="empty">Sin metas activas este mes</div>'; return; }
+  metasPresDiv.innerHTML=activasMes.map(({meta,cuota,real})=>{
+    const pct=Math.min(Math.round(real/cuota*100),100);
+    const col=pct>=100?'var(--accent2)':pct>=60?'var(--amber)':'var(--blue)';
+    const acc=db.cuentas.find(c=>c.id===meta.cuentaMeta)||{nombre:'',emoji:'💰'};
+    return \`<div class="prog-wrap" onclick="openAporteMeta('\${meta.id}',\${cuota})" style="cursor:pointer">
+      <div class="prog-header">
+        <span>\${meta.emoji} \${meta.nombre} <span style="font-size:10px;color:var(--muted)">\${acc.emoji} \${acc.nombre}</span></span>
+        <span class="mono" style="color:\${col};font-size:13px">\${fmtM(real)} / \${fmtM(cuota)}</span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:\${pct}%;background:\${col}"></div></div>
+      <div class="prog-pct">\${pct}% · \${real>=cuota?'✓ Cuota completa':'Falta: '+fmtM(cuota-real)}</div>
+    </div>\`;
+  }).join('');
+}
+
+
 // ============================================================
 // PATRIMONIO
 // ============================================================
@@ -1070,6 +1335,21 @@ function getModalHtml(tipo){
       <div class="field"><label>Emoji</label><input type="text" id="f-emoji" placeholder="Ej: 🐾" maxlength="2" value="${esG?'📦':'✨'}"></div>
       <div class="btn-row"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="doSaveCat('${esG?'gasto':'ingreso'}')">Guardar</button></div>`;
   }
+  if(tipo==='meta'){
+    if(db.cuentas.length<2) return `<h3>🎯 Nueva meta</h3><div class="empty">Necesitas al menos 2 cuentas (una origen y una subcuenta donde guardar el dinero)</div><div class="btn-row"><button class="btn btn-ghost" onclick="closeModal()">Cerrar</button></div>`;
+    const emojis=['🎯','✈️','🏠','🚗','📱','💍','🏖️','📚','💪','🎓','🏥','🛒'];
+    const colores=['#d4f04a','#4af0a0','#5ab0f0','#f0c05a','#b08af5','#f05a9a'];
+    const fechaMin = new Date(); fechaMin.setMonth(fechaMin.getMonth()+1);
+    const fechaMinStr = fechaMin.getFullYear()+'-'+String(fechaMin.getMonth()+1).padStart(2,'0')+'-01';
+    return `<h3>🎯 Nueva meta</h3>
+      <div class="field"><label>Nombre</label><input type="text" id="f-nombre" placeholder="Ej: Viaje Santa Marta" autofocus></div>
+      <div class="field"><label>Monto total ($)</label><input type="number" id="f-monto" placeholder="0" min="0" step="10000"></div>
+      <div class="field"><label>Fecha límite</label><input type="date" id="f-fecha" min="${fechaMinStr}"></div>
+      <div class="field"><label>Cuenta origen (de donde sale el dinero)</label><select id="f-origen">${accOpts()}</select></div>
+      <div class="field"><label>Subcuenta donde guardar (ej: Nu, Global66)</label><select id="f-destino">${accOpts()}</select></div>
+      <div class="field"><label>Emoji</label><select id="f-emoji">${emojis.map(e=>`<option value="${e}">${e}</option>`).join('')}</select></div>
+      <div class="btn-row"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="doSaveMeta()">Crear meta</button></div>`;
+  }
   return '';
 }
 
@@ -1134,6 +1414,101 @@ async function doSaveCat(tipo){
   try{ await saveCats(); setSyncStatus('ok','Sincronizado'); }catch(e){ setSyncStatus('err','Error al guardar'); }
   renderAll();
 }
+
+
+function openAporteMeta(metaId, cuotaSugerida){
+  const meta = db.metas.find(m=>m.id===metaId); if(!meta) return;
+  const acc=db.cuentas.find(c=>c.id===meta.cuentaOrigen)||{nombre:'?',emoji:'💳'};
+  const accMeta=db.cuentas.find(c=>c.id===meta.cuentaMeta)||{nombre:'?',emoji:'💰'};
+  document.getElementById('modal-content').innerHTML=`<h3>${meta.emoji} Aportar a meta</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">${meta.nombre} · Cuota sugerida: <strong style="color:var(--accent)">${fmtM(cuotaSugerida)}</strong></p>
+    <div class="field"><label>Monto a aportar ($)</label><input type="number" id="f-monto" value="${cuotaSugerida}" min="0" step="1000" autofocus></div>
+    <div class="field"><label>Desde</label><select id="f-origen" disabled><option value="${acc.id}">${acc.emoji} ${acc.nombre}</option></select></div>
+    <div class="field"><label>Hacia</label><select id="f-destino" disabled><option value="${accMeta.id}">${accMeta.emoji} ${accMeta.nombre}</option></select></div>
+    <div class="field"><label>Fecha</label><input type="date" id="f-fecha" value="${today()}"></div>
+    <div class="btn-row"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="doRegistrarAporte('${metaId}')">Registrar aporte</button></div>`;
+  document.getElementById('modal-bg').classList.add('open');
+}
+
+async function doRegistrarAporte(metaId){
+  const meta=db.metas.find(m=>m.id===metaId); if(!meta) return;
+  const monto=parseFloat(document.getElementById('f-monto').value||0);
+  const fecha=document.getElementById('f-fecha').value;
+  if(!monto||monto<=0){alert('Ingresa un monto válido');return;}
+  const tx={id:uid(),tipo:'transferencia',monto,descripcion:'Aporte: '+meta.nombre,fecha,
+    cuentaOrigen:meta.cuentaOrigen,cuentaDestino:meta.cuentaMeta,metaId};
+  db.transacciones.push(tx);
+  // Check if meta completed
+  const totalAportado=getMetaAportado(metaId)+monto;
+  if(totalAportado>=meta.montoTotal && !meta.completada){
+    meta.completada=true;
+    setTimeout(()=>showToast('🎉 ¡Lograste tu meta: '+meta.nombre+'!','ok'),300);
+    await saveMetas().catch(()=>{});
+  }
+  closeModal();
+  setSyncStatus('loading','Guardando...');
+  try{ await saveTxToSheets(tx); setSyncStatus('ok','Sincronizado'); }catch(e){ setSyncStatus('err','Error al guardar'); }
+  renderAll();
+}
+
+async function doSaveMeta(){
+  const nombre=document.getElementById('f-nombre').value.trim();
+  const monto=parseFloat(document.getElementById('f-monto').value||0);
+  const fecha=document.getElementById('f-fecha').value;
+  const origen=document.getElementById('f-origen').value;
+  const destino=document.getElementById('f-destino').value;
+  if(!nombre||monto<=0||!fecha){alert('Completa todos los campos');return;}
+  if(origen===destino){alert('La cuenta origen y subcuenta deben ser diferentes');return;}
+  const meta={id:uid(),nombre,montoTotal:monto,fechaLimite:fecha,cuentaOrigen:origen,cuentaMeta:destino,
+    emoji:document.getElementById('f-emoji').value,color:'#d4f04a',completada:false};
+  db.metas.push(meta);
+  closeModal();
+  setSyncStatus('loading','Guardando...');
+  try{ await saveMetas(); setSyncStatus('ok','Sincronizado'); }catch(e){ setSyncStatus('err','Error al guardar'); }
+  renderAll();
+}
+
+function openEditMeta(id){
+  const meta=db.metas.find(m=>m.id===id); if(!meta) return;
+  const aportado=getMetaAportado(id);
+  const acc=db.cuentas.find(c=>c.id===meta.cuentaOrigen)||{nombre:'?',emoji:'💳'};
+  const accM=db.cuentas.find(c=>c.id===meta.cuentaMeta)||{nombre:'?',emoji:'💰'};
+  document.getElementById('modal-content').innerHTML=`<h3>${meta.emoji} ${meta.nombre}</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Aportado: <strong style="color:var(--accent2)">${fmtM(aportado)}</strong> de ${fmtM(meta.montoTotal)}</p>
+    <div class="field"><label>Nombre</label><input type="text" id="f-nombre" value="${meta.nombre}"></div>
+    <div class="field"><label>Monto total ($)</label><input type="number" id="f-monto" value="${meta.montoTotal}" step="10000"></div>
+    <div class="field"><label>Fecha límite</label><input type="date" id="f-fecha" value="${meta.fechaLimite}"></div>
+    <div class="btn-row">
+      <button class="btn btn-danger btn-sm" onclick="doDeleteMeta('${id}')">Eliminar</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="doUpdateMeta('${id}')">Actualizar</button>
+    </div>
+    <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line)">
+      <button class="btn btn-primary" style="width:100%;background:var(--blue)" onclick="closeModal();openAporteMeta('${id}',${getMetaCuotaMes(meta,currentYear,currentMonth)})">💰 Registrar aporte este mes</button>
+    </div>`;
+  document.getElementById('modal-bg').classList.add('open');
+}
+
+async function doUpdateMeta(id){
+  const meta=db.metas.find(m=>m.id===id);
+  meta.nombre=document.getElementById('f-nombre').value.trim();
+  meta.montoTotal=parseFloat(document.getElementById('f-monto').value||0);
+  meta.fechaLimite=document.getElementById('f-fecha').value;
+  closeModal();
+  setSyncStatus('loading','Guardando...');
+  try{ await saveMetas(); setSyncStatus('ok','Sincronizado'); }catch(e){ setSyncStatus('err','Error al guardar'); }
+  renderAll();
+}
+
+async function doDeleteMeta(id){
+  if(!confirm('¿Eliminar esta meta? Los aportes registrados quedarán como transferencias normales.')) return;
+  db.metas=db.metas.filter(m=>m.id!==id);
+  closeModal();
+  setSyncStatus('loading','Guardando...');
+  try{ await saveMetas(); setSyncStatus('ok','Sincronizado'); }catch(e){ setSyncStatus('err','Error al guardar'); }
+  renderAll();
+}
+
 
 // ============================================================
 // EDIT TX
