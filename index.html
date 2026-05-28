@@ -635,11 +635,11 @@ async function sheetsWrite(sheet, values){
 async function loadAllData(){
   try {
     const [txRows, cuentaRows, presRows, actRows, pasRows, catGRows, catIRows] = await Promise.all([
-      sheetsGet('transacciones!A:J'),
-      sheetsGet('cuentas!A:D'),
-      sheetsGet('presupuestos!A:D'),
-      sheetsGet('activos!A:F'),
-      sheetsGet('pasivos!A:F'),
+      sheetsGet('transacciones!A:J').catch(()=>[]),
+      sheetsGet('cuentas!A:D').catch(()=>[]),
+      sheetsGet('presupuestos!A:D').catch(()=>[]),
+      sheetsGet('activos!A:F').catch(()=>[]),
+      sheetsGet('pasivos!A:F').catch(()=>[]),
       sheetsGet('categorias!A:C').catch(()=>[]),
       sheetsGet('categorias!D:F').catch(()=>[])
     ]);
@@ -774,7 +774,8 @@ function renderAll(){
   const lbl=MONTH_NAMES[currentMonth]+' '+currentYear;
   ['month-lbl','month-lbl2','month-lbl3','month-lbl4'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=lbl; });
   document.getElementById('dash-sub').textContent='Resumen — '+lbl;
-  renderDashboard(); renderTransacciones(); renderPresupuesto(); renderPatrimonio(); renderCuentas(); renderCategorias(); renderMetas();
+  const renders = [renderDashboard, renderTransacciones, renderPresupuesto, renderPatrimonio, renderCuentas, renderCategorias, renderMetas];
+  renders.forEach(fn=>{ try{ fn(); }catch(e){ console.error(fn.name, e); } });
 }
 
 // ============================================================
