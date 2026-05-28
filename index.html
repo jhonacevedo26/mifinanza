@@ -1119,8 +1119,7 @@ function renderMetas(){
     var cuotaHtml = done
       ? '<span style="color:var(--accent2)">Meta lograda</span>'
       : '<span style="color:var(--accent)">Cuota '+MONTH_NAMES[nowM]+': <strong>'+fmtM(cuota)+'</strong></span>';
-    var onclick = 'openEditMeta(' + JSON.stringify(meta.id) + ')';
-    return '<div class="meta-card" onclick="'+onclick+'">'
+    return '<div class="meta-card" onclick="openEditMeta(&#39;' + meta.id + '&#39;)">' +
       +'<div class="meta-card-header"><div>'
       +'<div class="meta-card-title">'+meta.emoji+' '+meta.nombre+'</div>'
       +'<div class="meta-card-sub">Limite: '+limite+' - '+acc.emoji+' '+acc.nombre+' a '+accM.emoji+' '+accM.nombre+'</div>'
@@ -1407,16 +1406,22 @@ async function doSaveCat(tipo){
 
 
 function openAporteMeta(metaId, cuotaSugerida){
-  const meta = db.metas.find(m=>m.id===metaId); if(!meta) return;
-  const acc=db.cuentas.find(c=>c.id===meta.cuentaOrigen)||{nombre:'?',emoji:'💳'};
-  const accMeta=db.cuentas.find(c=>c.id===meta.cuentaMeta)||{nombre:'?',emoji:'💰'};
-  document.getElementById('modal-content').innerHTML=`<h3>${meta.emoji} Aportar a meta</h3>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">${meta.nombre} · Cuota sugerida: <strong style="color:var(--accent)">${fmtM(cuotaSugerida)}</strong></p>
-    <div class="field"><label>Monto a aportar ($)</label><input type="number" id="f-monto" value="${cuotaSugerida}" min="0" step="1000" autofocus></div>
-    <div class="field"><label>Desde</label><select id="f-origen" disabled><option value="${acc.id}">${acc.emoji} ${acc.nombre}</option></select></div>
-    <div class="field"><label>Hacia</label><select id="f-destino" disabled><option value="${accMeta.id}">${accMeta.emoji} ${accMeta.nombre}</option></select></div>
-    <div class="field"><label>Fecha</label><input type="date" id="f-fecha" value="${today()}"></div>
-    <div class="btn-row"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="doRegistrarAporte('${metaId}')">Registrar aporte</button></div>`;
+  var meta=db.metas.find(function(m){ return m.id===metaId; });
+  if(!meta) return;
+  var acc=db.cuentas.find(function(c){ return c.id===meta.cuentaOrigen; })||{nombre:'?',emoji:'💳'};
+  var accM=db.cuentas.find(function(c){ return c.id===meta.cuentaMeta; })||{nombre:'?',emoji:'💰'};
+  var ocReg='doRegistrarAporte(&#39;'+metaId+'&#39;)';
+  document.getElementById('modal-content').innerHTML=''
+    +'<h3>'+meta.emoji+' Aportar a meta</h3>'
+    +'<p style="font-size:13px;color:var(--muted);margin-bottom:16px">'+meta.nombre+' &middot; Cuota sugerida: <strong style="color:var(--accent)">'+fmtM(cuotaSugerida)+'</strong></p>'
+    +'<div class="field"><label>Monto a aportar ($)</label><input type="number" id="f-monto" value="'+cuotaSugerida+'" min="0" step="1000" autofocus></div>'
+    +'<div class="field"><label>Desde</label><input type="text" disabled value="'+acc.emoji+' '+acc.nombre+'" style="opacity:.6"></div>'
+    +'<div class="field"><label>Hacia subcuenta</label><input type="text" disabled value="'+accM.emoji+' '+accM.nombre+'" style="opacity:.6"></div>'
+    +'<div class="field"><label>Fecha</label><input type="date" id="f-fecha" value="'+today()+'"></div>'
+    +'<div class="btn-row">'
+    +'<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>'
+    +'<button class="btn btn-primary" onclick="'+ocReg+'">Registrar aporte</button>'
+    +'</div>';
   document.getElementById('modal-bg').classList.add('open');
 }
 
@@ -1459,23 +1464,29 @@ async function doSaveMeta(){
 }
 
 function openEditMeta(id){
-  const meta=db.metas.find(m=>m.id===id); if(!meta) return;
-  const aportado=getMetaAportado(id);
-  const acc=db.cuentas.find(c=>c.id===meta.cuentaOrigen)||{nombre:'?',emoji:'💳'};
-  const accM=db.cuentas.find(c=>c.id===meta.cuentaMeta)||{nombre:'?',emoji:'💰'};
-  document.getElementById('modal-content').innerHTML=`<h3>${meta.emoji} ${meta.nombre}</h3>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Aportado: <strong style="color:var(--accent2)">${fmtM(aportado)}</strong> de ${fmtM(meta.montoTotal)}</p>
-    <div class="field"><label>Nombre</label><input type="text" id="f-nombre" value="${meta.nombre}"></div>
-    <div class="field"><label>Monto total ($)</label><input type="number" id="f-monto" value="${meta.montoTotal}" step="10000"></div>
-    <div class="field"><label>Fecha límite</label><input type="date" id="f-fecha" value="${meta.fechaLimite}"></div>
-    <div class="btn-row">
-      <button class="btn btn-danger btn-sm" onclick="doDeleteMeta('${id}')">Eliminar</button>
-      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="doUpdateMeta('${id}')">Actualizar</button>
-    </div>
-    <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line)">
-      <button class="btn btn-primary" style="width:100%;background:var(--blue)" onclick="closeModal();openAporteMeta('${id}',${getMetaCuotaMes(meta,currentYear,currentMonth)})">💰 Registrar aporte este mes</button>
-    </div>`;
+  var meta=db.metas.find(function(m){ return m.id===id; });
+  if(!meta) return;
+  var aportado=getMetaAportado(id);
+  var cuota=getMetaCuotaMes(meta,currentYear,currentMonth);
+  var acc=db.cuentas.find(function(c){ return c.id===meta.cuentaOrigen; })||{nombre:'?',emoji:'💳'};
+  var accM=db.cuentas.find(function(c){ return c.id===meta.cuentaMeta; })||{nombre:'?',emoji:'💰'};
+  var ocDel='doDeleteMeta(&#39;'+id+'&#39;)';
+  var ocUpd='doUpdateMeta(&#39;'+id+'&#39;)';
+  var ocAporte='openAporteMeta(&#39;'+id+'&#39;,'+cuota+')';
+  document.getElementById('modal-content').innerHTML=''
+    +'<h3>'+meta.emoji+' '+meta.nombre+'</h3>'
+    +'<p style="font-size:13px;color:var(--muted);margin-bottom:16px">Aportado: <strong style="color:var(--accent2)">'+fmtM(aportado)+'</strong> de '+fmtM(meta.montoTotal)+'</p>'
+    +'<div class="field"><label>Nombre</label><input type="text" id="f-nombre" value="'+meta.nombre+'"></div>'
+    +'<div class="field"><label>Monto total ($)</label><input type="number" id="f-monto" value="'+meta.montoTotal+'" step="10000"></div>'
+    +'<div class="field"><label>Fecha limite</label><input type="date" id="f-fecha" value="'+meta.fechaLimite+'"></div>'
+    +'<div class="btn-row">'
+    +'<button class="btn btn-danger btn-sm" onclick="'+ocDel+'">Eliminar</button>'
+    +'<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>'
+    +'<button class="btn btn-primary" onclick="'+ocUpd+'">Actualizar</button>'
+    +'</div>'
+    +'<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line)">'
+    +'<button class="btn btn-primary" style="width:100%;background:var(--blue)" onclick="closeModal();'+ocAporte+'">💰 Registrar aporte este mes</button>'
+    +'</div>';
   document.getElementById('modal-bg').classList.add('open');
 }
 
