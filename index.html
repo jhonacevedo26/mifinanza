@@ -1209,8 +1209,7 @@ function renderPresupuestoMetas(){
     var col=pct>=100?'var(--accent2)':pct>=60?'var(--amber)':'var(--blue)';
     var accM=db.cuentas.find(function(c){ return c.id===meta.cuentaMeta; })||{nombre:'',emoji:'💰'};
     var falta=real>=cuota?'Cuota completa':'Falta: '+fmtM(cuota-real);
-    var oc='openAporteMeta('+JSON.stringify(meta.id)+','+cuota+')';
-    return '<div class="prog-wrap" onclick="'+oc+'" style="cursor:pointer">'
+    return '<div class="prog-wrap" onclick="openAporteMeta(&#39;'+meta.id+'&#39;,'+cuota+')" style="cursor:pointer">'
       +'<div class="prog-header">'
       +'<span>'+meta.emoji+' '+meta.nombre+' <span style="font-size:10px;color:var(--muted)">'+accM.emoji+' '+accM.nombre+'</span></span>'
       +'<span class="mono" style="color:'+col+';font-size:13px">'+fmtM(real)+' / '+fmtM(cuota)+'</span>'
