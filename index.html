@@ -1102,41 +1102,36 @@ function renderMetas(){
   }
 
   const nowY=currentYear, nowM=currentMonth;
-  list.innerHTML = db.metas.map(meta=>{
-    const aportado = getMetaAportado(meta.id);
-    const pct = Math.min(Math.round(aportado/meta.montoTotal*100),100);
-    const cuota = getMetaCuotaMes(meta, nowY, nowM);
-    const restante = meta.montoTotal - aportado;
-    const done = aportado >= meta.montoTotal;
-    const col = done?'var(--accent)':pct>=75?'var(--accent2)':pct>=40?'var(--amber)':'var(--blue)';
-    const badge = done
-      ? '<span class="meta-badge done">✓ Completada</span>'
-      : pct>=80
-        ? '<span class="meta-badge over">Casi lista</span>'
-        : pct>=40
-          ? '<span class="meta-badge warn">En progreso</span>'
-          : '<span class="meta-badge">Iniciando</span>';
-    const limite = meta.fechaLimite ? new Date(meta.fechaLimite+'T00:00:00').toLocaleDateString('es-CO',{month:'long',year:'numeric'}) : '—';
-    const acc = db.cuentas.find(c=>c.id===meta.cuentaOrigen)||{nombre:'',emoji:'💳'};
-    const accMeta = db.cuentas.find(c=>c.id===meta.cuentaMeta)||{nombre:'',emoji:'💰'};
-    return `<div class="meta-card" onclick="openEditMeta('\${meta.id}')">
-      <div class="meta-card-header">
-        <div>
-          <div class="meta-card-title">\${meta.emoji} \${meta.nombre}</div>
-          <div class="meta-card-sub">Límite: \${limite} · \${acc.emoji} \${acc.nombre} → \${accMeta.emoji} \${accMeta.nombre}</div>
-        </div>
-        \${badge}
-      </div>
-      <div class="prog-header">
-        <span style="font-size:12px">\${fmtM(aportado)} de \${fmtM(meta.montoTotal)}</span>
-        <span class="mono" style="color:\${col};font-size:13px">\${pct}%</span>
-      </div>
-      <div class="prog-bar"><div class="prog-fill" style="width:\${pct}%;background:\${col}"></div></div>
-      <div class="prog-pct" style="display:flex;justify-content:space-between;margin-top:6px">
-        <span>Restante: \${fmtM(restante)}</span>
-        \${!done?'<span style="color:var(--accent)">Cuota \${MONTH_NAMES[nowM]}: <strong>'+fmtM(cuota)+'</strong></span>':'<span style="color:var(--accent2)">✓ Meta lograda</span>'}
-      </div>
-    </div>`;
+  list.innerHTML = db.metas.map(function(meta){
+    var aportado = getMetaAportado(meta.id);
+    var pct = Math.min(Math.round(aportado/meta.montoTotal*100),100);
+    var cuota = getMetaCuotaMes(meta, nowY, nowM);
+    var restante = meta.montoTotal - aportado;
+    var done = aportado >= meta.montoTotal;
+    var col = done?'var(--accent)':pct>=75?'var(--accent2)':pct>=40?'var(--amber)':'var(--blue)';
+    var badge = done ? '<span class="meta-badge done">Completada</span>'
+      : pct>=80 ? '<span class="meta-badge over">Casi lista</span>'
+      : pct>=40 ? '<span class="meta-badge warn">En progreso</span>'
+      : '<span class="meta-badge">Iniciando</span>';
+    var limite = meta.fechaLimite ? new Date(meta.fechaLimite+'T00:00:00').toLocaleDateString('es-CO',{month:'long',year:'numeric'}) : '-';
+    var acc = db.cuentas.find(function(c){return c.id===meta.cuentaOrigen;})||{nombre:'?',emoji:'💳'};
+    var accM = db.cuentas.find(function(c){return c.id===meta.cuentaMeta;})||{nombre:'?',emoji:'💰'};
+    var cuotaHtml = done
+      ? '<span style="color:var(--accent2)">Meta lograda</span>'
+      : '<span style="color:var(--accent)">Cuota '+MONTH_NAMES[nowM]+': <strong>'+fmtM(cuota)+'</strong></span>';
+    var onclick = 'openEditMeta(' + JSON.stringify(meta.id) + ')';
+    return '<div class="meta-card" onclick="'+onclick+'">'
+      +'<div class="meta-card-header"><div>'
+      +'<div class="meta-card-title">'+meta.emoji+' '+meta.nombre+'</div>'
+      +'<div class="meta-card-sub">Limite: '+limite+' - '+acc.emoji+' '+acc.nombre+' a '+accM.emoji+' '+accM.nombre+'</div>'
+      +'</div>'+badge+'</div>'
+      +'<div class="prog-header">'
+      +'<span style="font-size:12px">'+fmtM(aportado)+' de '+fmtM(meta.montoTotal)+'</span>'
+      +'<span class="mono" style="color:'+col+';font-size:13px">'+pct+'%</span></div>'
+      +'<div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%;background:'+col+'"></div></div>'
+      +'<div class="prog-pct" style="display:flex;justify-content:space-between;margin-top:6px">'
+      +'<span>Restante: '+fmtM(restante)+'</span>'+cuotaHtml+'</div>'
+      +'</div>';
   }).join('');
 
   renderGoalsTable();
@@ -1144,90 +1139,85 @@ function renderMetas(){
 }
 
 function renderGoalsTable(){
-  const wrap = document.getElementById('goals-annual-table');
+  var wrap = document.getElementById('goals-annual-table');
   if(!wrap) return;
   if(!db.metas.length){ wrap.innerHTML='<div class="empty">Sin metas registradas</div>'; return; }
+  var year = currentYear;
+  var startM = new Date().getMonth();
+  var months = [];
+  for(var m=startM; m<12; m++) months.push(m);
 
-  const year = currentYear;
-  // Show months from current month to end of year (or up to meta limit)
-  const startM = new Date().getMonth();
-  const months = [];
-  for(let m=startM; m<12; m++) months.push(m);
+  var html = '<table class="goals-table"><thead><tr><th>Meta</th>';
+  months.forEach(function(m){
+    html += '<th'+(m===currentMonth?' class="cell-cur"':'')+'>'+MONTH_NAMES[m].substring(0,3)+'</th>';
+  });
+  html += '<th>Total</th></tr></thead><tbody>';
 
-  let html = '<table class="goals-table"><thead><tr><th>Meta</th>';
-  months.forEach(m=>{ html+=`<th\${m===currentMonth?' class="cell-cur"':''}>\${MONTH_NAMES[m].substring(0,3)}</th>`; });
-  html+='<th>Total</th></tr></thead><tbody>';
-
-  db.metas.forEach(meta=>{
-    const limite = new Date(meta.fechaLimite+'T00:00:00');
-    html+=`<tr><td>\${meta.emoji} \${meta.nombre}</td>`;
-    let rowTotal=0;
-    months.forEach(m=>{
-      const isCur = m===currentMonth;
-      const isPast = m < new Date().getMonth();
-      // Aportes reales ese mes
-      const realAporte = getMetaAportes(meta.id)
-        .filter(t=>{ const p=t.fecha.split('-'); return +p[0]===year && +p[1]-1===m; })
-        .reduce((s,t)=>s+t.monto,0);
-      // Mes ya pasó la fecha límite
-      const pastLimit = new Date(year,m,1) > limite;
-      let cellVal=0, cellClass='';
+  db.metas.forEach(function(meta){
+    var limite = new Date(meta.fechaLimite+'T00:00:00');
+    html += '<tr><td>'+meta.emoji+' '+meta.nombre+'</td>';
+    months.forEach(function(m){
+      var isCur = m===currentMonth;
+      var isPast = m < new Date().getMonth();
+      var realAporte = getMetaAportes(meta.id)
+        .filter(function(t){ var p=t.fecha.split('-'); return +p[0]===year && +p[1]-1===m; })
+        .reduce(function(s,t){ return s+t.monto; }, 0);
+      var pastLimit = new Date(year,m,1) > limite;
+      var cellVal=0, cellClass='';
       if(pastLimit){ cellClass='cell-0'; }
-      else if(realAporte>0){ cellVal=realAporte; cellClass='cell-paid'; rowTotal+=cellVal; }
-      else {
-        const cuota = getMetaCuotaMes(meta,year,m);
-        cellVal=cuota; cellClass=isPast?'cell-pending':(isCur?'cell-cur':'cell-pending');
-        rowTotal+=cellVal;
-      }
-      const display = cellVal>0 ? fmtM(cellVal) : (pastLimit?'—':'—');
-      html+=`<td class="\${cellClass}\${isCur&&!cellClass.includes('cur')?' cell-cur':''}">\${display}</td>`;
+      else if(realAporte>0){ cellVal=realAporte; cellClass='cell-paid'; }
+      else { cellVal=getMetaCuotaMes(meta,year,m); cellClass=isPast?'cell-pending':(isCur?'cell-cur':'cell-pending'); }
+      var display = cellVal>0 ? fmtM(cellVal) : '—';
+      html += '<td class="'+cellClass+(isCur&&cellClass!=='cell-cur'?' cell-cur':'')+'">'+display+'</td>';
     });
-    html+=`<td style="color:var(--text);font-weight:600">\${fmtM(meta.montoTotal)}</td></tr>`;
+    html += '<td style="color:var(--text);font-weight:600">'+fmtM(meta.montoTotal)+'</td></tr>';
   });
 
-  // Totals row
-  html+='<tr style="border-top:1px solid var(--line)"><td style="font-weight:600;color:var(--text)">Total mes</td>';
-  months.forEach(m=>{
-    const isCur=m===currentMonth;
-    const total=db.metas.reduce((s,meta)=>{
-      const limite=new Date(meta.fechaLimite+'T00:00:00');
+  html += '<tr style="border-top:1px solid var(--line)"><td style="font-weight:600;color:var(--text)">Total mes</td>';
+  months.forEach(function(m){
+    var isCur=m===currentMonth;
+    var total=db.metas.reduce(function(s,meta){
+      var limite=new Date(meta.fechaLimite+'T00:00:00');
       if(new Date(year,m,1)>limite) return s;
-      const real=getMetaAportes(meta.id).filter(t=>{const p=t.fecha.split('-');return +p[0]===year&&+p[1]-1===m;}).reduce((s,t)=>s+t.monto,0);
+      var real=getMetaAportes(meta.id).filter(function(t){var p=t.fecha.split('-');return +p[0]===year&&+p[1]-1===m;}).reduce(function(s,t){return s+t.monto;},0);
       if(real>0) return s+real;
       return s+getMetaCuotaMes(meta,year,m);
     },0);
-    html+=`<td class="\${isCur?'cell-cur':''}" style="font-weight:600;color:var(--text)">\${total>0?fmtM(total):'—'}</td>`;
+    html += '<td class="'+(isCur?'cell-cur':'')+'" style="font-weight:600;color:var(--text)">'+(total>0?fmtM(total):'—')+'</td>';
   });
-  const grandTotal=db.metas.reduce((s,m)=>s+m.montoTotal,0);
-  html+=`<td style="font-weight:600;color:var(--accent)">\${fmtM(grandTotal)}</td></tr>`;
-  html+='</tbody></table>';
+  var grandTotal=db.metas.reduce(function(s,m){ return s+m.montoTotal; },0);
+  html += '<td style="font-weight:600;color:var(--accent)">'+fmtM(grandTotal)+'</td></tr>';
+  html += '</tbody></table>';
   wrap.innerHTML=html;
 }
 
-// Agrega cuotas de metas al presupuesto visual
 function renderPresupuestoMetas(){
-  const mk=monthKey(currentYear,currentMonth);
-  // Inject into presupuesto page if it exists
-  const metasPresDiv=document.getElementById('budget-metas-list');
-  if(!metasPresDiv) return;
-  const activasMes=db.metas.filter(m=>!m.completada).map(meta=>{
-    const cuota=getMetaCuotaMes(meta,currentYear,currentMonth);
-    const real=getMetaAportes(meta.id).filter(t=>{const p=t.fecha.split('-');const d=new Date(+p[0],+p[1]-1,+p[2]);return d.getFullYear()===currentYear&&d.getMonth()===currentMonth;}).reduce((s,t)=>s+t.monto,0);
-    return {meta,cuota,real};
-  }).filter(x=>x.cuota>0);
-  if(!activasMes.length){ metasPresDiv.innerHTML='<div class="empty">Sin metas activas este mes</div>'; return; }
-  metasPresDiv.innerHTML=activasMes.map(({meta,cuota,real})=>{
-    const pct=Math.min(Math.round(real/cuota*100),100);
-    const col=pct>=100?'var(--accent2)':pct>=60?'var(--amber)':'var(--blue)';
-    const acc=db.cuentas.find(c=>c.id===meta.cuentaMeta)||{nombre:'',emoji:'💰'};
-    return `<div class="prog-wrap" onclick="openAporteMeta('\${meta.id}',\${cuota})" style="cursor:pointer">
-      <div class="prog-header">
-        <span>\${meta.emoji} \${meta.nombre} <span style="font-size:10px;color:var(--muted)">\${acc.emoji} \${acc.nombre}</span></span>
-        <span class="mono" style="color:\${col};font-size:13px">\${fmtM(real)} / \${fmtM(cuota)}</span>
-      </div>
-      <div class="prog-bar"><div class="prog-fill" style="width:\${pct}%;background:\${col}"></div></div>
-      <div class="prog-pct">\${pct}% · \${real>=cuota?'✓ Cuota completa':'Falta: '+fmtM(cuota-real)}</div>
-    </div>`;
+  var div=document.getElementById('budget-metas-list');
+  if(!div) return;
+  var activas=db.metas.filter(function(m){ return !m.completada; }).map(function(meta){
+    var cuota=getMetaCuotaMes(meta,currentYear,currentMonth);
+    var real=getMetaAportes(meta.id).filter(function(t){
+      var p=t.fecha.split('-'); var d=new Date(+p[0],+p[1]-1,+p[2]);
+      return d.getFullYear()===currentYear&&d.getMonth()===currentMonth;
+    }).reduce(function(s,t){ return s+t.monto; },0);
+    return {meta:meta,cuota:cuota,real:real};
+  }).filter(function(x){ return x.cuota>0; });
+  if(!activas.length){ div.innerHTML='<div class="empty">Sin metas activas este mes</div>'; return; }
+  div.innerHTML=activas.map(function(x){
+    var meta=x.meta, cuota=x.cuota, real=x.real;
+    var pct=Math.min(Math.round(real/cuota*100),100);
+    var col=pct>=100?'var(--accent2)':pct>=60?'var(--amber)':'var(--blue)';
+    var accM=db.cuentas.find(function(c){ return c.id===meta.cuentaMeta; })||{nombre:'',emoji:'💰'};
+    var falta=real>=cuota?'Cuota completa':'Falta: '+fmtM(cuota-real);
+    var oc='openAporteMeta('+JSON.stringify(meta.id)+','+cuota+')';
+    return '<div class="prog-wrap" onclick="'+oc+'" style="cursor:pointer">'
+      +'<div class="prog-header">'
+      +'<span>'+meta.emoji+' '+meta.nombre+' <span style="font-size:10px;color:var(--muted)">'+accM.emoji+' '+accM.nombre+'</span></span>'
+      +'<span class="mono" style="color:'+col+';font-size:13px">'+fmtM(real)+' / '+fmtM(cuota)+'</span>'
+      +'</div>'
+      +'<div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%;background:'+col+'"></div></div>'
+      +'<div class="prog-pct">'+pct+'% - '+falta+'</div>'
+      +'</div>';
   }).join('');
 }
 
