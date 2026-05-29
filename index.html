@@ -1046,18 +1046,44 @@ function renderPresupuesto(){
     </div>`;
   });
 
-  // Fila de totales
+  // Total presupuesto gastos
   const totalPct=Math.min(Math.round(totalGastado/totalMeta*100),100);
   const totalCol=totalPct>=100?'var(--red)':totalPct>=80?'var(--amber)':'var(--accent)';
   const totalRestante=totalMeta-totalGastado;
-  html+=`<div class="prog-wrap" style="margin-top:10px;border-top:1px solid var(--line);padding-top:12px">
-    <div class="prog-header">
-      <span style="font-weight:600;color:var(--text)">📊 Total presupuesto</span>
-      <span class="mono" style="color:${totalCol};font-size:13px;font-weight:600">${fmtM(totalGastado)} / ${fmtM(totalMeta)}</span>
-    </div>
-    <div class="prog-bar"><div class="prog-fill" style="width:${totalPct}%;background:${totalCol}"></div></div>
-    <div class="prog-pct">${totalPct}% utilizado · ${totalRestante>=0?'Disponible: '+fmtM(totalRestante):'⚠ Superado por '+fmtM(-totalRestante)}</div>
-  </div>`;
+  html+='<div class="prog-wrap" style="margin-top:10px;border-top:1px solid var(--line);padding-top:12px">'
+    +'<div class="prog-header">'
+    +'<span style="font-weight:600;color:var(--text)">📊 Total gastos del mes</span>'
+    +'<span class="mono" style="color:'+totalCol+';font-size:13px;font-weight:600">'+fmtM(totalGastado)+' / '+fmtM(totalMeta)+'</span>'
+    +'</div>'
+    +'<div class="prog-bar"><div class="prog-fill" style="width:'+totalPct+'%;background:'+totalCol+'"></div></div>'
+    +'<div class="prog-pct">'+totalPct+'% utilizado · '+(totalRestante>=0?'Disponible: '+fmtM(totalRestante):'⚠ Superado por '+fmtM(-totalRestante))+'</div>'
+    +'</div>';
+
+  // Total combinado (gastos + cuotas de metas)
+  const totalCuotasMetas = db.metas.filter(function(m){ return !m.completada; }).reduce(function(s,meta){
+    return s + getMetaCuotaMes(meta, currentYear, currentMonth);
+  }, 0);
+  const totalGastadoMetas = db.metas.filter(function(m){ return !m.completada; }).reduce(function(s,meta){
+    return s + getMetaAportes(meta.id).filter(function(t){
+      const p=t.fecha.split('-'); const d=new Date(+p[0],+p[1]-1,+p[2]);
+      return d.getFullYear()===currentYear && d.getMonth()===currentMonth;
+    }).reduce(function(s2,t){ return s2+t.monto; }, 0);
+  }, 0);
+  const totalCombinadoMeta = totalMeta + totalCuotasMetas;
+  const totalCombinadoGastado = totalGastado + totalGastadoMetas;
+  if(totalCuotasMetas > 0){
+    const combPct = Math.min(Math.round(totalCombinadoGastado/totalCombinadoMeta*100),100);
+    const combCol = combPct>=100?'var(--red)':combPct>=80?'var(--amber)':'var(--purple)';
+    const combRestante = totalCombinadoMeta - totalCombinadoGastado;
+    html+='<div class="prog-wrap" style="margin-top:8px;padding:12px;background:rgba(176,138,245,.06);border:1px solid rgba(176,138,245,.2);border-radius:var(--r)">'
+      +'<div class="prog-header">'
+      +'<span style="font-weight:600;color:var(--purple)">🎯 Total con metas</span>'
+      +'<span class="mono" style="color:'+combCol+';font-size:13px;font-weight:600">'+fmtM(totalCombinadoGastado)+' / '+fmtM(totalCombinadoMeta)+'</span>'
+      +'</div>'
+      +'<div class="prog-bar"><div class="prog-fill" style="width:'+combPct+'%;background:'+combCol+'"></div></div>'
+      +'<div class="prog-pct">'+combPct+'% utilizado · '+(combRestante>=0?'Disponible: '+fmtM(combRestante):'⚠ Superado por '+fmtM(-combRestante))+'</div>'
+      +'</div>';
+  }
 
   div.innerHTML=html;
 }
@@ -1121,7 +1147,7 @@ function renderMetas(){
       : '<span style="color:var(--accent)">Cuota '+MONTH_NAMES[nowM]+': <strong>'+fmtM(cuota)+'</strong></span>';
     return '<div class="meta-card" onclick="openEditMeta(&#39;' + meta.id + '&#39;)">' +
       +'<div class="meta-card-header"><div>'
-      +'<div class="meta-card-title">'+metaEmoji+' '+meta.nombre+'</div>'
+      +'<div class="meta-card-title">'+metaEmoji+meta.nombre+'</div>'
       +'<div class="meta-card-sub">Limite: '+limite+' - '+acc.emoji+' '+acc.nombre+' a '+accM.emoji+' '+accM.nombre+'</div>'
       +'</div>'+badge+'</div>'
       +'<div class="prog-header">'
@@ -1154,8 +1180,8 @@ function renderGoalsTable(){
 
   db.metas.forEach(function(meta){
     var limite = new Date(meta.fechaLimite+'T00:00:00');
-    var mEmoji = meta.emoji && meta.emoji !== 'undefined' ? meta.emoji : '🎯';
-    html += '<tr><td>'+mEmoji+' '+meta.nombre+'</td>';
+    var mEmoji = (meta.emoji && meta.emoji !== 'undefined' && meta.emoji !== 'NaN') ? meta.emoji+' ' : '';
+    html += '<tr><td>'+mEmoji+meta.nombre+'</td>';
     months.forEach(function(m){
       var isCur = m===currentMonth;
       var isPast = m < new Date().getMonth();
