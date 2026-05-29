@@ -1036,14 +1036,14 @@ function renderPresupuesto(){
     const col=pct>=100?'var(--red)':pct>=80?'var(--amber)':'var(--accent)';
     const ci=catInfo(p.categoria,'gasto');
     const restante=p.monto-gastado;
-    html+=`<div class="prog-wrap" onclick="openEditPresup('${p.id}')" style="cursor:pointer">
-      <div class="prog-header">
-        <span>${ci.e} ${p.categoria}</span>
-        <span class="mono" style="color:${col};font-size:13px">${fmtM(gastado)} / ${fmtM(p.monto)}</span>
-      </div>
-      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${col}"></div></div>
-      <div class="prog-pct">${pct}% utilizado · ${restante>=0?'Disponible: '+fmtM(restante):'⚠ Superado por '+fmtM(-restante)}</div>
-    </div>`;
+    html += '<div class="prog-wrap" onclick="openEditPresup(&#39;'+p.id+'&#39;)" style="cursor:pointer">'
+      +'<div class="prog-header">'
+      +'<span>'+ci.e+' '+p.categoria+'</span>'
+      +'<span class="mono" style="color:'+col+';font-size:13px">'+fmtM(gastado)+' / '+fmtM(p.monto)+'</span>'
+      +'</div>'
+      +'<div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%;background:'+col+'"></div></div>'
+      +'<div class="prog-pct">'+pct+'% utilizado · '+(restante>=0?'Disponible: '+fmtM(restante):'⚠ Superado por '+fmtM(-restante))+'</div>'
+      +'</div>';
   });
 
   // Total presupuesto gastos
@@ -1142,10 +1142,11 @@ function renderMetas(){
     var limite = meta.fechaLimite ? new Date(meta.fechaLimite+'T00:00:00').toLocaleDateString('es-CO',{month:'long',year:'numeric'}) : '-';
     var acc = db.cuentas.find(function(c){return c.id===meta.cuentaOrigen;})||{nombre:'?',emoji:'💳'};
     var accM = db.cuentas.find(function(c){return c.id===meta.cuentaMeta;})||{nombre:'?',emoji:'💰'};
+    var metaEmoji = (meta.emoji && meta.emoji !== 'undefined' && meta.emoji !== 'NaN') ? meta.emoji+' ' : '';
     var cuotaHtml = done
       ? '<span style="color:var(--accent2)">Meta lograda</span>'
       : '<span style="color:var(--accent)">Cuota '+MONTH_NAMES[nowM]+': <strong>'+fmtM(cuota)+'</strong></span>';
-    return '<div class="meta-card" onclick="openEditMeta(&#39;' + meta.id + '&#39;)">' +
+    return '<div class="meta-card" onclick="openEditMeta(&#39;' + meta.id + '&#39;)">'
       +'<div class="meta-card-header"><div>'
       +'<div class="meta-card-title">'+metaEmoji+meta.nombre+'</div>'
       +'<div class="meta-card-sub">Limite: '+limite+' - '+acc.emoji+' '+acc.nombre+' a '+accM.emoji+' '+accM.nombre+'</div>'
