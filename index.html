@@ -397,6 +397,11 @@ h1,h2,h3{font-family:'Fraunces',serif;font-weight:400;}
           </div>
         </div>
       </div>
+
+      <!-- TOTALES -->
+      <div id="presup-total-gastos"></div>
+      <div id="presup-total-metas" style="margin-top:8px"></div>
+
     </div>
 
     <!-- PATRIMONIO -->
@@ -1046,46 +1051,64 @@ function renderPresupuesto(){
       +'</div>';
   });
 
-  // Total presupuesto gastos
-  const totalPct=Math.min(Math.round(totalGastado/totalMeta*100),100);
-  const totalCol=totalPct>=100?'var(--red)':totalPct>=80?'var(--amber)':'var(--accent)';
-  const totalRestante=totalMeta-totalGastado;
-  html+='<div class="prog-wrap" style="margin-top:10px;border-top:1px solid var(--line);padding-top:12px">'
-    +'<div class="prog-header">'
-    +'<span style="font-weight:600;color:var(--text)">📊 Total gastos del mes</span>'
-    +'<span class="mono" style="color:'+totalCol+';font-size:13px;font-weight:600">'+fmtM(totalGastado)+' / '+fmtM(totalMeta)+'</span>'
-    +'</div>'
-    +'<div class="prog-bar"><div class="prog-fill" style="width:'+totalPct+'%;background:'+totalCol+'"></div></div>'
-    +'<div class="prog-pct">'+totalPct+'% utilizado · '+(totalRestante>=0?'Disponible: '+fmtM(totalRestante):'⚠ Superado por '+fmtM(-totalRestante))+'</div>'
-    +'</div>';
+  div.innerHTML=html;
 
-  // Total combinado (gastos + cuotas de metas)
-  const totalCuotasMetas = db.metas.filter(function(m){ return !m.completada; }).reduce(function(s,meta){
-    return s + getMetaCuotaMes(meta, currentYear, currentMonth);
-  }, 0);
-  const totalGastadoMetas = db.metas.filter(function(m){ return !m.completada; }).reduce(function(s,meta){
-    return s + getMetaAportes(meta.id).filter(function(t){
-      const p=t.fecha.split('-'); const d=new Date(+p[0],+p[1]-1,+p[2]);
-      return d.getFullYear()===currentYear && d.getMonth()===currentMonth;
-    }).reduce(function(s2,t){ return s2+t.monto; }, 0);
-  }, 0);
-  const totalCombinadoMeta = totalMeta + totalCuotasMetas;
-  const totalCombinadoGastado = totalGastado + totalGastadoMetas;
-  if(totalCuotasMetas > 0){
-    const combPct = Math.min(Math.round(totalCombinadoGastado/totalCombinadoMeta*100),100);
-    const combCol = combPct>=100?'var(--red)':combPct>=80?'var(--amber)':'var(--purple)';
-    const combRestante = totalCombinadoMeta - totalCombinadoGastado;
-    html+='<div class="prog-wrap" style="margin-top:8px;padding:12px;background:rgba(176,138,245,.06);border:1px solid rgba(176,138,245,.2);border-radius:var(--r)">'
-      +'<div class="prog-header">'
-      +'<span style="font-weight:600;color:var(--purple)">🎯 Total con metas</span>'
-      +'<span class="mono" style="color:'+combCol+';font-size:13px;font-weight:600">'+fmtM(totalCombinadoGastado)+' / '+fmtM(totalCombinadoMeta)+'</span>'
-      +'</div>'
-      +'<div class="prog-bar"><div class="prog-fill" style="width:'+combPct+'%;background:'+combCol+'"></div></div>'
-      +'<div class="prog-pct">'+combPct+'% utilizado · '+(combRestante>=0?'Disponible: '+fmtM(combRestante):'⚠ Superado por '+fmtM(-combRestante))+'</div>'
-      +'</div>';
+  // BLOQUE TOTAL GASTOS
+  var totalPct=Math.min(Math.round(totalGastado/(totalMeta||1)*100),100);
+  var totalCol=totalPct>=100?'var(--red)':totalPct>=80?'var(--amber)':'var(--accent)';
+  var totalRestante=totalMeta-totalGastado;
+  var divTG=document.getElementById('presup-total-gastos');
+  if(divTG){
+    if(totalMeta>0){
+      divTG.innerHTML='<div class="card-sm" style="margin-top:0;border-color:'+totalCol+'">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+        +'<span style="font-weight:600;font-size:13px">📊 Total presupuesto del mes</span>'
+        +'<span class="mono" style="color:'+totalCol+';font-size:14px;font-weight:600">'+totalPct+'%</span>'
+        +'</div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">'
+        +'<span style="color:var(--muted)">Ejecutado</span><span class="mono" style="color:'+totalCol+'">'+fmtM(totalGastado)+'</span>'
+        +'</div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px">'
+        +'<span style="color:var(--muted)">Presupuestado</span><span class="mono">'+fmtM(totalMeta)+'</span>'
+        +'</div>'
+        +'<div class="prog-bar"><div class="prog-fill" style="width:'+totalPct+'%;background:'+totalCol+'"></div></div>'
+        +'<div style="font-size:11px;color:var(--muted);margin-top:5px">'+(totalRestante>=0?'Disponible: <strong style="color:'+totalCol+'">'+fmtM(totalRestante)+'</strong>':'⚠ Superado por <strong style="color:var(--red)">'+fmtM(-totalRestante)+'</strong>')+'</div>'
+        +'</div>';
+    } else { divTG.innerHTML=''; }
   }
 
-  div.innerHTML=html;
+  // BLOQUE TOTAL METAS
+  var totalCuotasMetas=db.metas.filter(function(m){ return !m.completada; }).reduce(function(s,meta){
+    return s+getMetaCuotaMes(meta,currentYear,currentMonth);
+  },0);
+  var totalAportadoMetas=db.metas.filter(function(m){ return !m.completada; }).reduce(function(s,meta){
+    return s+getMetaAportes(meta.id).filter(function(t){
+      var p=t.fecha.split('-'); var d=new Date(+p[0],+p[1]-1,+p[2]);
+      return d.getFullYear()===currentYear&&d.getMonth()===currentMonth;
+    }).reduce(function(s2,t){ return s2+t.monto; },0);
+  },0);
+  var divTM=document.getElementById('presup-total-metas');
+  if(divTM){
+    if(totalCuotasMetas>0){
+      var metaPct=Math.min(Math.round(totalAportadoMetas/(totalCuotasMetas||1)*100),100);
+      var metaCol=metaPct>=100?'var(--accent2)':metaPct>=60?'var(--amber)':'var(--purple)';
+      var metaRestante=totalCuotasMetas-totalAportadoMetas;
+      divTM.innerHTML='<div class="card-sm" style="border-color:'+metaCol+'">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+        +'<span style="font-weight:600;font-size:13px">🎯 Total compromisos del mes</span>'
+        +'<span class="mono" style="color:'+metaCol+';font-size:14px;font-weight:600">'+metaPct+'%</span>'
+        +'</div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">'
+        +'<span style="color:var(--muted)">Aportado</span><span class="mono" style="color:'+metaCol+'">'+fmtM(totalAportadoMetas)+'</span>'
+        +'</div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px">'
+        +'<span style="color:var(--muted)">Cuota total metas</span><span class="mono">'+fmtM(totalCuotasMetas)+'</span>'
+        +'</div>'
+        +'<div class="prog-bar"><div class="prog-fill" style="width:'+metaPct+'%;background:'+metaCol+'"></div></div>'
+        +'<div style="font-size:11px;color:var(--muted);margin-top:5px">'+(metaRestante<=0?'✓ Aportes al día':'Pendiente este mes: <strong style="color:var(--purple)">'+fmtM(metaRestante)+'</strong>')+'</div>'
+        +'</div>';
+    } else { divTM.innerHTML=''; }
+  }
 }
 
 
