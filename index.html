@@ -1043,7 +1043,7 @@ function renderPresupuesto(){
     const restante=p.monto-gastado;
     html += '<div class="prog-wrap" onclick="openEditPresup(&#39;'+p.id+'&#39;)" style="cursor:pointer">'
       +'<div class="prog-header">'
-      +'<span>'+ci.e+' '+p.categoria+'</span>'
+      +'<span style="font-size:13px">'+ci.e+' '+p.categoria+'</span>'
       +'<span class="mono" style="color:'+col+';font-size:13px">'+fmtM(gastado)+' / '+fmtM(p.monto)+'</span>'
       +'</div>'
       +'<div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%;background:'+col+'"></div></div>'
@@ -1052,14 +1052,14 @@ function renderPresupuesto(){
   });
 
   // Categorías de gasto SIN presupuesto asignado
-  const sinPresup=db.catsGasto.filter(c=>!catsConPresup.has(c.nombre));
+  const sinPresup=db.catsGasto.filter(c=>!catsConPresup.has(c.n));
   if(sinPresup.length){
     html+='<div style="font-size:11px;color:var(--muted);margin:12px 0 6px;text-transform:uppercase;letter-spacing:.5px">Sin presupuesto asignado</div>';
     sinPresup.forEach(c=>{
-      const gastado=txs.filter(t=>t.tipo==="gasto"&&t.categoria===c.nombre).reduce((s,t)=>s+t.monto,0);
+      const gastado=txs.filter(t=>t.tipo==="gasto"&&t.categoria===c.n).reduce((s,t)=>s+t.monto,0);
       html+='<div class="prog-wrap" style="opacity:.5;border-style:dashed">'
         +'<div class="prog-header">'
-        +'<span style="font-size:13px">'+c.emoji+' '+c.nombre+'</span>'
+        +'<span style="font-size:13px">'+c.e+' '+c.n+'</span>'
         +'<span class="mono" style="font-size:12px;color:var(--muted)">'+(gastado>0?fmtM(gastado)+' gastado':'Sin movimientos')+'</span>'
         +'</div>'
         +'<div style="font-size:11px;color:var(--muted);margin-top:2px">Sin presupuesto este mes</div>'
