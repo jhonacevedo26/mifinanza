@@ -1032,37 +1032,35 @@ function renderPresupuesto(){
   if(!pres.length){ div.innerHTML='<div class="empty"><div class="empty-icon">◎</div>Sin presupuesto para este mes. Agrega una meta arriba.</div>'; return; }
 
   let totalMeta=0, totalGastado=0;
+  const catsUsadas=new Set();
   let html='';
+
   pres.forEach(p=>{
     const gastado=txs.filter(t=>t.tipo==='gasto'&&t.categoria===p.categoria).reduce((s,t)=>s+t.monto,0);
-    totalMeta+=p.monto;
-    totalGastado+=gastado;
+    totalMeta+=p.monto; totalGastado+=gastado;
     const pct=Math.min(Math.round(gastado/p.monto*100),100);
     const col=pct>=100?'var(--red)':pct>=80?'var(--amber)':'var(--accent)';
     const ci=catInfo(p.categoria,'gasto');
-    const restante=p.monto-gastado;
-    html += '<div class="prog-wrap" onclick="openEditPresup(&#39;'+p.id+'&#39;)" style="cursor:pointer">'
-      +'<div class="prog-header">'
-      +'<span style="font-size:13px">'+ci.e+' '+p.categoria+'</span>'
-      +'<span class="mono" style="color:'+col+';font-size:13px">'+fmtM(gastado)+' / '+fmtM(p.monto)+'</span>'
+    catsUsadas.add(p.categoria);
+    html+='<div onclick="openEditPresup(\'' +p.id+ '\')" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:9px 14px;margin-bottom:6px;background:var(--bg2);border:1px solid var(--line);border-left:3px solid '+col+';border-radius:11px;gap:8px">'
+      +'<div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1">'
+      +'<span style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+ci.e+' '+p.categoria+'</span>'
       +'</div>'
-      +'<div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%;background:'+col+'"></div></div>'
-      +'<div class="prog-pct">'+pct+'% utilizado · '+(restante>=0?'Disponible: '+fmtM(restante):'⚠ Superado por '+fmtM(-restante))+'</div>'
+      +'<div style="display:flex;align-items:center;gap:10px;flex-shrink:0">'
+      +'<span class="mono" style="font-size:11px;color:var(--muted)">'+fmtM(gastado)+'/'+fmtM(p.monto)+'</span>'
+      +'<span class="mono" style="font-size:13px;font-weight:700;color:'+col+';min-width:38px;text-align:right">'+pct+'%</span>'
+      +'</div>'
       +'</div>';
   });
 
-  // Categorías de gasto SIN presupuesto asignado
-  const sinPresup=db.catsGasto.filter(c=>!catsConPresup.has(c.n));
+  const sinPresup=db.catsGasto.filter(c=>!catsUsadas.has(c.n));
   if(sinPresup.length){
-    html+='<div style="font-size:11px;color:var(--muted);margin:12px 0 6px;text-transform:uppercase;letter-spacing:.5px">Sin presupuesto asignado</div>';
+    html+='<div style="font-size:11px;color:var(--muted);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.5px">Sin presupuesto asignado</div>';
     sinPresup.forEach(c=>{
-      const gastado=txs.filter(t=>t.tipo==="gasto"&&t.categoria===c.n).reduce((s,t)=>s+t.monto,0);
-      html+='<div class="prog-wrap" style="opacity:.5;border-style:dashed">'
-        +'<div class="prog-header">'
+      const gastado=txs.filter(t=>t.tipo==='gasto'&&t.categoria===c.n).reduce((s,t)=>s+t.monto,0);
+      html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;margin-bottom:5px;background:var(--bg2);border:1px dashed var(--line);border-radius:11px;opacity:.5">'
         +'<span style="font-size:13px">'+c.e+' '+c.n+'</span>'
-        +'<span class="mono" style="font-size:12px;color:var(--muted)">'+(gastado>0?fmtM(gastado)+' gastado':'Sin movimientos')+'</span>'
-        +'</div>'
-        +'<div style="font-size:11px;color:var(--muted);margin-top:2px">Sin presupuesto este mes</div>'
+        +'<span class="mono" style="font-size:12px;color:var(--muted)">'+(gastado>0?fmtM(gastado)+' gastado':'—')+'</span>'
         +'</div>';
     });
   }
